@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotiveMe - Atteins tes objectifs avec la pression sociale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 480px;
+            min-height: 600px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .app-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .screen {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+        }
+
+        button.success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        }
+
+        .challenge-card {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .challenge-card:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .challenge-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--dark);
+        }
+
+        .challenge-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-completed {
+            background: #ddd6fe;
+            color: #5b21b6;
+        }
+
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .progress-bar {
+            background: var(--border);
+            height: 8px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .checkin-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .day-box {
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 80px;
+        }
+
+        .day-box.checked {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .day-box.not-required {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .day-box:not(.not-required):hover {
+            transform: scale(1.05);
+        }
+
+        .day-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--light);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .day-chip.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .day-chip:hover {
+            transform: scale(1.1);
+        }
+
+        .gage-option {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .gage-option:hover {
+            border-color: var(--primary);
+        }
+
+        .gage-option.selected {
+            background: #ede9fe;
+            border-color: var(--primary);
+        }
+
+        .witness-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .tab-bar {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: -2px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                border-radius: 0;
+                max-width: 100%;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header avec info utilisateur -->
+        <div class="app-header">
+            <h1>🎯 MotiveMe</h1>
+            <p>Transforme tes objectifs en habitudes</p>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span id="userEmail"></span>
+                <span id="userPoints">0 pts</span>
+            </div>
+        </div>
+
+        <!-- Écran de connexion -->
+        <div class="screen active" id="loginScreen">
+            <h2 style="text-align: center; margin-bottom: 30px;">Bienvenue ! 👋</h2>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="ton@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            
+            <button onclick="login()">Se connecter</button>
+            
+            <p style="text-align: center; margin-top: 20px; color: #6b7280;">
+                Pas encore de compte ? 
+                <a href="#" onclick="showScreen('signupScreen')" style="color: var(--primary);">S'inscrire</a>
+            </p>
+        </div>
+
+        <!-- Écran d'inscription -->
+        <div class="screen" id="signupScreen">
+            <h2 style="text-align: center; margin-bottom: 30px;">Créer ton compte 🚀</h2>
+            
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="signupName" placeholder="Nicolas">
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signupEmail" placeholder="ton@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="signupPassword" placeholder="••••••••">
+            </div>
+            
+            <button onclick="signup()">Créer mon compte</button>
+            
+            <p style="text-align: center; margin-top: 20px; color: #6b7280;">
+                Déjà un compte ? 
+                <a href="#" onclick="showScreen('loginScreen')" style="color: var(--primary);">Se connecter</a>
+            </p>
+        </div>
+
+        <!-- Dashboard principal -->
+        <div class="screen" id="dashboardScreen">
+            <div class="tab-bar">
+                <div class="tab active" onclick="switchTab('challenges')">
+                    Challenges <span class="badge">3</span>
+                </div>
+                <div class="tab" onclick="switchTab('witness')">
+                    Témoin
+                </div>
+                <div class="tab" onclick="switchTab('profile')">
+                    Profil
+                </div>
+            </div>
+
+            <!-- Onglet Challenges -->
+            <div id="challengesTab">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="streakCount">0</div>
+                        <div class="stat-label">Série en cours 🔥</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="completionRate">0%</div>
+                        <div class="stat-label">Taux de réussite</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPoints">0</div>
+                        <div class="stat-label">Points totaux ⭐</div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 20px 0;">Mes challenges actifs</h3>
+                <div id="challengesList"></div>
+
+                <button onclick="showScreen('createChallengeScreen')" style="margin-top: 20px;">
+                    ➕ Créer un nouveau challenge
+                </button>
+            </div>
+
+            <!-- Onglet Témoin -->
+            <div id="witnessTab" style="display: none;">
+                <div class="witness-card">
+                    <h3>Tu es témoin de :</h3>
+                    <p style="margin-top: 10px;">Aucun ami ne t'a encore choisi comme témoin</p>
+                </div>
+
+                <h3 style="margin: 20px 0;">Invitations reçues</h3>
+                <div id="witnessInvitations"></div>
+            </div>
+
+            <!-- Onglet Profil -->
+            <div id="profileTab" style="display: none;">
+                <h3>Mon profil</h3>
+                
+                <div class="stat-card" style="margin: 20px 0;">
+                    <h4 id="profileName"></h4>
+                    <p id="profileEmail" style="color: #6b7280; margin-top: 5px;"></p>
+                </div>
+
+                <h4 style="margin: 20px 0;">Mes badges 🏆</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <span style="font-size: 40px;">🎯</span>
+                    <span style="font-size: 40px;">💪</span>
+                    <span style="font-size: 40px;">🔥</span>
+                </div>
+
+                <button class="danger" onclick="logout()" style="margin-top: 40px;">
+                    Déconnexion
+                </button>
+            </div>
+        </div>
+
+        <!-- Écran création de challenge -->
+        <div class="screen" id="createChallengeScreen">
+            <h2 style="margin-bottom: 20px;">Nouveau Challenge 🎯</h2>
+            
+            <div class="form-group">
+                <label>Quel est ton objectif ?</label>
+                <input type="text" id="challengeTitle" placeholder="Ex: Lire 30 min par jour">
+            </div>
+
+            <div class="form-group">
+                <label>Durée du challenge</label>
+                <select id="challengeDuration">
+                    <option value="7">1 semaine</option>
+                    <option value="30">1 mois</option>
+                    <option value="90">3 mois</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fréquence</label>
+                <select id="challengeFrequency" onchange="toggleDaysSelector()">
+                    <option value="daily">Tous les jours</option>
+                    <option value="custom">Personnalisé</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="daysSelector" style="display: none;">
+                <label>Sélectionne les jours</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <div class="day-chip" data-day="1" onclick="toggleDay(this)">L</div>
+                    <div class="day-chip" data-day="2" onclick="toggleDay(this)">M</div>
+                    <div class="day-chip" data-day="3" onclick="toggleDay(this)">M</div>
+                    <div class="day-chip" data-day="4" onclick="toggleDay(this)">J</div>
+                    <div class="day-chip" data-day="5" onclick="toggleDay(this)">V</div>
+                    <div class="day-chip" data-day="6" onclick="toggleDay(this)">S</div>
+                    <div class="day-chip" data-day="0" onclick="toggleDay(this)">D</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Heure de rappel quotidien</label>
+                <input type="time" id="reminderTime" value="20:00">
+            </div>
+
+            <div class="form-group">
+                <label>Email de ton témoin (qui vérifiera tes progrès)</label>
+                <input type="email" id="witnessEmail" placeholder="ami@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>Choisis ton gage (si tu échoues) 🎪</label>
+                <div id="gageOptions">
+                    <div class="gage-option" onclick="selectGage(this, 'pompes')">
+                        💪 Faire 30 pompes
+                    </div>
+                    <div class="gage-option" onclick="selectGage(this, 'cafe')">
+                        ☕ Payer un café/resto au témoin
+                    </div>
+                    <div class="gage-option" onclick="selectGage(this, 'photo')">
+                        📸 Poster une photo embarrassante
+                    </div>
+                    <div class="gage-option" onclick="selectGage(this, 'don')">
+                        💝 Faire un don de 10€ à une association
+                    </div>
+                    <div class="gage-option" onclick="selectGage(this, 'custom')">
+                        ✍️ Gage personnalisé
+                    </div>
+                </div>
+                <input type="text" id="customGage" placeholder="Décris ton gage personnalisé" style="display: none; margin-top: 10px;">
+            </div>
+
+            <button onclick="createChallenge()">Créer le challenge</button>
+            <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 10px;">
+                Annuler
+            </button>
+        </div>
+
+        <!-- Écran détail d'un challenge -->
+        <div class="screen" id="challengeDetailScreen">
+            <h2 id="detailTitle"></h2>
+            
+            <div class="witness-card">
+                <p>👀 Témoin : <strong id="detailWitness"></strong></p>
+                <p style="margin-top: 5px;">🎪 Gage : <strong id="detailGage"></strong></p>
+            </div>
+
+            <h3>Check-in cette semaine</h3>
+            <div class="checkin-grid" id="checkinGrid"></div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="detailProgress"></div>
+            </div>
+            <p style="text-align: center; color: #6b7280; margin-top: 10px;">
+                <span id="detailStats"></span>
+            </p>
+
+            <button class="success" onclick="checkIn()" id="checkinBtn">
+                ✅ Check-in du jour
+            </button>
+
+            <button onclick="uploadProof()" style="margin-top: 10px;">
+                📸 Ajouter une preuve
+            </button>
+
+            <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 10px;">
+                Retour
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // État global de l'application
+        let currentUser = null;
+        let challenges = [];
+        let selectedGage = null;
+        let currentChallengeId = null;
+        let selectedDays = [];
+
+        // Base de données simulée (localStorage) - Persistante
+        const DB = {
+            users: JSON.parse(localStorage.getItem('users') || '[]'),
+            challenges: JSON.parse(localStorage.getItem('challenges') || '[]'),
+            checkins: JSON.parse(localStorage.getItem('checkins') || '[]'),
+            
+            save() {
+                localStorage.setItem('users', JSON.stringify(this.users));
+                localStorage.setItem('challenges', JSON.stringify(this.challenges));
+                localStorage.setItem('checkins', JSON.stringify(this.checkins));
+            }
+        };
+
+        // Fonctions utilitaires
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.className = `notification ${type} show`;
+            notification.textContent = message;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            
+            if (screenId === 'dashboardScreen') {
+                loadDashboard();
+            }
+        }
+
+        function switchTab(tabName) {
+            // Masquer tous les onglets
+            document.getElementById('challengesTab').style.display = 'none';
+            document.getElementById('witnessTab').style.display = 'none';
+            document.getElementById('profileTab').style.display = 'none';
+            
+            // Afficher l'onglet sélectionné
+            document.getElementById(`${tabName}Tab`).style.display = 'block';
+            
+            // Mettre à jour les classes des tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Fonctions pour gérer les chips de jours
+        function toggleDaysSelector() {
+            const frequency = document.getElementById('challengeFrequency').value;
+            const daysSelector = document.getElementById('daysSelector');
+            
+            if (frequency === 'custom') {
+                daysSelector.style.display = 'block';
+            } else {
+                daysSelector.style.display = 'none';
+                selectedDays = [];
+            }
+        }
+
+        function toggleDay(chip) {
+            const day = parseInt(chip.dataset.day);
+            
+            if (chip.classList.contains('selected')) {
+                chip.classList.remove('selected');
+                selectedDays = selectedDays.filter(d => d !== day);
+            } else {
+                chip.classList.add('selected');
+                selectedDays.push(day);
+            }
+        }
+
+        // Générer les occurrences
+        function generateOccurrences(startDate, duration, frequency, customDays = []) {
+            const occurrences = [];
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < duration; i++) {
+                const date = new Date(start);
+                date.setDate(start.getDate() + i);
+                const dayOfWeek = date.getDay();
+                
+                let shouldInclude = false;
+                
+                if (frequency === 'daily') {
+                    shouldInclude = true;
+                } else if (frequency === 'custom' && customDays.includes(dayOfWeek)) {
+                    shouldInclude = true;
+                }
+                
+                if (shouldInclude) {
+                    occurrences.push({
+                        id: occurrences.length,
+                        date: date.toISOString(),
+                        dayOfWeek: dayOfWeek,
+                        checked: false,
+                        required: true
+                    });
+                }
+            }
+            
+            return occurrences;
+        }
+
+        // Obtenir le fuseau horaire
+        function getUserTimezone() {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+
+        // Formater une date
+        function formatDate(date) {
+            const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+            const d = new Date(date);
+            return `${days[d.getDay()]} ${d.getDate()}`;
+        }
+
+        // Authentification
+        function signup() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            if (!name || !email || !password) {
+                showNotification('Remplis tous les champs !', 'error');
+                return;
+            }
+            
+            // Vérifier si l'utilisateur existe déjà
+            if (DB.users.find(u => u.email === email)) {
+                showNotification('Cet email est déjà utilisé', 'error');
+                return;
+            }
+            
+            // Créer le nouvel utilisateur
+            const newUser = {
+                id: Date.now(),
+                name,
+                email,
+                password, // En prod, on hasherait le mot de passe !
+                points: 0,
+                badges: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            DB.users.push(newUser);
+            DB.save();
+            
+            currentUser = newUser;
+            showNotification('Compte créé avec succès ! 🎉');
+            showScreen('dashboardScreen');
+            updateUserInfo();
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showNotification('Remplis tous les champs !', 'error');
+                return;
+            }
+            
+            const user = DB.users.find(u => u.email === email && u.password === password);
+            
+            if (!user) {
+                showNotification('Email ou mot de passe incorrect', 'error');
+                return;
+            }
+            
+            currentUser = user;
+            showNotification(`Bon retour ${user.name} ! 👋`);
+            showScreen('dashboardScreen');
+            updateUserInfo();
+        }
+
+        function logout() {
+            currentUser = null;
+            showScreen('loginScreen');
+            showNotification('À bientôt ! 👋');
+        }
+
+        function updateUserInfo() {
+            if (!currentUser) return;
+            
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('userEmail').textContent = currentUser.name;
+            document.getElementById('userPoints').textContent = `${currentUser.points} pts`;
+            document.getElementById('profileName').textContent = currentUser.name;
+            document.getElementById('profileEmail').textContent = currentUser.email;
+        }
+
+        // Gestion des challenges
+        function selectGage(element, type) {
+            // Retirer la sélection précédente
+            document.querySelectorAll('.gage-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            selectedGage = type;
+            
+            // Afficher le champ personnalisé si nécessaire
+            const customField = document.getElementById('customGage');
+            if (type === 'custom') {
+                customField.style.display = 'block';
+            } else {
+                customField.style.display = 'none';
+            }
+        }
+
+        function createChallenge() {
+            const title = document.getElementById('challengeTitle').value;
+            const duration = parseInt(document.getElementById('challengeDuration').value);
+            const frequency = document.getElementById('challengeFrequency').value;
+            const witnessEmail = document.getElementById('witnessEmail').value;
+            const reminderTime = document.getElementById('reminderTime').value;
+            
+            if (!title || !witnessEmail || !selectedGage) {
+                showNotification('Remplis tous les champs !', 'error');
+                return;
+            }
+            
+            if (frequency === 'custom' && selectedDays.length === 0) {
+                showNotification('Sélectionne au moins un jour !', 'error');
+                return;
+            }
+            
+            let gageText = '';
+            if (selectedGage === 'pompes') gageText = 'Faire 30 pompes';
+            else if (selectedGage === 'cafe') gageText = 'Payer un café/resto au témoin';
+            else if (selectedGage === 'photo') gageText = 'Poster une photo embarrassante';
+            else if (selectedGage === 'don') gageText = 'Faire un don de 10€';
+            else if (selectedGage === 'custom') gageText = document.getElementById('customGage').value;
+            
+            const startDate = new Date();
+            const occurrences = generateOccurrences(startDate, duration, frequency, selectedDays);
+            
+            const newChallenge = {
+                id: Date.now(),
+                userId: currentUser.id,
+                title,
+                duration,
+                frequency,
+                customDays: frequency === 'custom' ? selectedDays : [],
+                witnessEmail,
+                gage: gageText,
+                status: 'active',
+                startDate: startDate.toISOString(),
+                endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString(),
+                occurrences: occurrences,
+                timezone: getUserTimezone(),
+                reminderTime: reminderTime,
+                completionRate: 0,
+                currentStreak: 0
+            };
+            
+            DB.challenges.push(newChallenge);
+            DB.save();
+            
+            // Simuler l'envoi d'un email au témoin
+            showNotification(`Challenge créé ! Un email a été envoyé à ${witnessEmail} 📧`);
+            
+            // Ajouter des points pour la création
+            currentUser.points += 10;
+            DB.save();
+            updateUserInfo();
+            
+            // Réinitialiser le formulaire
+            selectedDays = [];
+            document.querySelectorAll('.day-chip').forEach(chip => {
+                chip.classList.remove('selected');
+            });
+            
+            showScreen('dashboardScreen');
+        }
+
+        function loadDashboard() {
+            if (!currentUser) return;
+            
+            // Charger les challenges de l'utilisateur
+            const userChallenges = DB.challenges.filter(c => c.userId === currentUser.id);
+            const challengesList = document.getElementById('challengesList');
+            
+            if (userChallenges.length === 0) {
+                challengesList.innerHTML = `
+                    <div class="empty-state">
+                        <p>Aucun challenge actif</p>
+                        <p style="margin-top: 10px;">Crée ton premier challenge pour commencer ! 🚀</p>
+                    </div>
+                `;
+            } else {
+                challengesList.innerHTML = userChallenges.map(challenge => {
+                    const progress = calculateProgress(challenge);
+                    const statusClass = challenge.status === 'active' ? 'status-active' : 
+                                       challenge.status === 'completed' ? 'status-completed' : 'status-failed';
+                    
+                    return `
+                        <div class="challenge-card" onclick="viewChallenge(${challenge.id})">
+                            <div class="challenge-header">
+                                <div class="challenge-title">${challenge.title}</div>
+                                <div class="challenge-status ${statusClass}">${challenge.status}</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
+                                Témoin : ${challenge.witnessEmail}
+                            </p>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Mettre à jour les statistiques
+            updateStats(userChallenges);
+        }
+
+        function calculateProgress(challenge) {
+            if (!challenge.occurrences) return 0;
+            
+            const totalOccurrences = challenge.occurrences.length;
+            const checkedOccurrences = challenge.occurrences.filter(o => o.checked).length;
+            return totalOccurrences > 0 ? Math.round((checkedOccurrences / totalOccurrences) * 100) : 0;
+        }
+
+        function calculateStreak(challenge) {
+            if (!challenge.occurrences) return 0;
+            
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Trier les occurrences par date décroissante
+            const sortedOccurrences = [...challenge.occurrences].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+            
+            // Compter les occurrences consécutives réussies
+            for (let occurrence of sortedOccurrences) {
+                const occDate = new Date(occurrence.date);
+                occDate.setHours(0, 0, 0, 0);
+                
+                // Ne compter que les occurrences passées ou d'aujourd'hui
+                if (occDate <= today) {
+                    if (occurrence.checked) {
+                        streak++;
+                    } else {
+                        break; // Le streak est cassé
+                    }
+                }
+            }
+            
+            return streak;
+        }
+
+        function updateStats(challenges) {
+            // Calculer le meilleur streak actuel parmi tous les challenges
+            let maxStreak = 0;
+            challenges.forEach(challenge => {
+                const streak = calculateStreak(challenge);
+                if (streak > maxStreak) {
+                    maxStreak = streak;
+                }
+            });
+            
+            document.getElementById('streakCount').textContent = maxStreak;
+            
+            // Taux de réussite global
+            let totalOccurrences = 0;
+            let completedOccurrences = 0;
+            
+            challenges.forEach(challenge => {
+                if (challenge.occurrences) {
+                    totalOccurrences += challenge.occurrences.length;
+                    completedOccurrences += challenge.occurrences.filter(o => o.checked).length;
+                }
+            });
+            
+            const completionRate = totalOccurrences > 0 ? 
+                Math.round((completedOccurrences / totalOccurrences) * 100) : 0;
+            
+            document.getElementById('completionRate').textContent = `${completionRate}%`;
+            document.getElementById('totalPoints').textContent = currentUser.points;
+        }
+
+        function viewChallenge(challengeId) {
+            currentChallengeId = challengeId;
+            const challenge = DB.challenges.find(c => c.id === challengeId);
+            
+            if (!challenge) return;
+            
+            document.getElementById('detailTitle').textContent = challenge.title;
+            document.getElementById('detailWitness').textContent = challenge.witnessEmail;
+            document.getElementById('detailGage').textContent = challenge.gage;
+            
+            // Afficher les occurrences de la semaine en cours
+            const grid = document.getElementById('checkinGrid');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Trouver les 7 prochaines occurrences à partir d'aujourd'hui
+            const upcomingOccurrences = [];
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Lundi de cette semaine
+            
+            for (let i = 0; i < 7; i++) {
+                const checkDate = new Date(startOfWeek);
+                checkDate.setDate(startOfWeek.getDate() + i);
+                
+                const occurrence = challenge.occurrences ? 
+                    challenge.occurrences.find(o => {
+                        const oDate = new Date(o.date);
+                        oDate.setHours(0, 0, 0, 0);
+                        return oDate.getTime() === checkDate.getTime();
+                    }) : null;
+                
+                upcomingOccurrences.push({
+                    date: checkDate,
+                    occurrence: occurrence,
+                    isToday: checkDate.getTime() === today.getTime()
+                });
+            }
+            
+            grid.innerHTML = upcomingOccurrences.map((item, index) => {
+                const dateStr = formatDate(item.date);
+                const isChecked = item.occurrence && item.occurrence.checked;
+                const isRequired = item.occurrence && item.occurrence.required;
+                const isPast = item.date < today && !item.isToday;
+                
+                let classes = 'day-box';
+                if (isChecked) classes += ' checked';
+                if (!isRequired) classes += ' not-required';
+                
+                return `
+                    <div class="${classes}" data-occurrence-id="${item.occurrence ? item.occurrence.id : -1}">
+                        <div style="font-size: 11px; font-weight: 600;">${dateStr}</div>
+                        ${isChecked ? '<div style="font-size: 20px;">✓</div>' : 
+                          item.isToday && isRequired ? '<div style="font-size: 10px;">Aujourd\'hui</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            // Mettre à jour la barre de progression
+            const progress = calculateProgress(challenge);
+            document.getElementById('detailProgress').style.width = `${progress}%`;
+            
+            const checkedCount = challenge.occurrences ? challenge.occurrences.filter(o => o.checked).length : 0;
+            const totalCount = challenge.occurrences ? challenge.occurrences.length : 0;
+            document.getElementById('detailStats').textContent = 
+                `${checkedCount} / ${totalCount} complétés • Série : ${calculateStreak(challenge)} 🔥`;
+            
+            // Vérifier si check-in déjà fait aujourd'hui
+            const todayOccurrence = challenge.occurrences ? 
+                challenge.occurrences.find(o => {
+                    const oDate = new Date(o.date);
+                    oDate.setHours(0, 0, 0, 0);
+                    return oDate.getTime() === today.getTime();
+                }) : null;
+            
+            const checkinBtn = document.getElementById('checkinBtn');
+            if (!todayOccurrence) {
+                checkinBtn.textContent = 'Pas de check-in prévu aujourd\'hui';
+                checkinBtn.disabled = true;
+                checkinBtn.style.opacity = '0.5';
+            } else if (todayOccurrence.checked) {
+                checkinBtn.textContent = '✓ Check-in fait aujourd\'hui';
+                checkinBtn.disabled = true;
+                checkinBtn.style.opacity = '0.5';
+            } else {
+                checkinBtn.textContent = '✅ Check-in du jour';
+                checkinBtn.disabled = false;
+                checkinBtn.style.opacity = '1';
+            }
+            
+            showScreen('challengeDetailScreen');
+        }
+
+        function checkIn() {
+            const challenge = DB.challenges.find(c => c.id === currentChallengeId);
+            if (!challenge || !challenge.occurrences) return;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Trouver l'occurrence d'aujourd'hui
+            const todayOccurrence = challenge.occurrences.find(o => {
+                const oDate = new Date(o.date);
+                oDate.setHours(0, 0, 0, 0);
+                return oDate.getTime() === today.getTime();
+            });
+            
+            if (!todayOccurrence || todayOccurrence.checked) return;
+            
+            // Marquer comme complété
+            todayOccurrence.checked = true;
+            
+            // Mettre à jour le streak
+            challenge.currentStreak = calculateStreak(challenge);
+            
+            // Ajouter l'entrée dans les checkins pour historique
+            DB.checkins.push({
+                userId: currentUser.id,
+                challengeId: currentChallengeId,
+                occurrenceId: todayOccurrence.id,
+                date: new Date().toISOString()
+            });
+            
+            // Ajouter des points
+            currentUser.points += 5;
+            if (challenge.currentStreak > 0 && challenge.currentStreak % 7 === 0) {
+                // Bonus de série hebdomadaire
+                currentUser.points += 20;
+                showNotification(`Série de ${challenge.currentStreak} jours ! +25 points total ! 🔥`);
+            } else {
+                showNotification('Check-in validé ! +5 points 🎉');
+            }
+            
+            DB.save();
+            
+            // Rafraîchir l'affichage
+            viewChallenge(currentChallengeId);
+            updateUserInfo();
+            
+            // Vérifier si le challenge est complété
+            const allCompleted = challenge.occurrences.every(o => o.checked);
+            if (allCompleted) {
+                challenge.status = 'completed';
+                currentUser.points += 50; // Bonus de complétion
+                DB.save();
+                showNotification('Challenge complété ! +50 points bonus ! 🏆');
+            }
+        }
+
+        function uploadProof() {
+            showNotification('📸 Fonctionnalité de preuve photo disponible dans la version complète !');
+        }
+
+        // Initialisation de l'app avec des données de démo
+        function initDemo() {
+            // Créer un utilisateur de démo si aucun n'existe
+            if (DB.users.length === 0) {
+                const demoUser = {
+                    id: 1,
+                    name: 'Nicolas',
+                    email: 'demo@motiveme.app',
+                    password: 'demo123',
+                    points: 150,
+                    badges: ['🎯', '💪'],
+                    createdAt: new Date().toISOString()
+                };
+                
+                DB.users.push(demoUser);
+                DB.save();
+            }
+        }
+
+        // Initialiser l'application au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            initDemo();
+            
+            // Afficher un message de bienvenue
+            setTimeout(() => {
+                showNotification('🎯 Bienvenue sur MotiveMe ! Connecte-toi avec demo@motiveme.app / demo123');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
