@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -118,6 +117,21 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
+        input.error {
+            border-color: var(--danger);
+        }
+
+        input.valid {
+            border-color: var(--success);
+        }
+
+        .field-error {
+            display: none;
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
         button {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
@@ -142,6 +156,12 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         button.secondary {
             background: var(--light);
             color: var(--dark);
@@ -153,6 +173,27 @@
 
         button.success {
             background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        }
+
+        button.loading {
+            opacity: 0.8;
+            cursor: wait;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff40;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .challenge-card {
@@ -333,37 +374,6 @@
             text-align: center;
         }
 
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            display: none;
-            animation: slideIn 0.3s ease;
-            z-index: 1000;
-            max-width: 300px;
-        }
-
-        .notification.show {
-            display: block;
-        }
-
-        .notification.success {
-            border-left: 4px solid var(--success);
-        }
-
-        .notification.error {
-            border-left: 4px solid var(--danger);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-
         .tab-bar {
             display: flex;
             border-bottom: 2px solid var(--border);
@@ -403,19 +413,62 @@
             color: #6b7280;
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .notifications-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .notification {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            max-width: 300px;
+            position: relative;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.visible {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        .notification-close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            width: auto;
+            padding: 0;
+            color: #6b7280;
         }
 
         @media (max-width: 480px) {
@@ -670,752 +723,7 @@
         </div>
     </div>
 
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Configuration Supabase - Ces valeurs viennent de vos secrets
-        const SUPABASE_URL = 'https://lcbvjrukxjnenzficeci.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjYnZqcnVreGpuZW56ZmljZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzODUxODksImV4cCI6MjA3Mzk2MTE4OX0.xU2myPnUfX6VmF0yk4LWRbmQcenyYDKMP-r80XAhgp8';
-
-        // Initialiser Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // État global de l'application
-        let currentUser = null;
-        let challenges = [];
-        let selectedGage = null;
-        let currentChallengeId = null;
-        let selectedDays = [];
-
-        // Fonctions utilitaires
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.className = `notification ${type} show`;
-            notification.textContent = message;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
-            
-            if (screenId === 'dashboardScreen') {
-                loadDashboard();
-            }
-        }
-
-        function switchTab(tabName) {
-            // Masquer tous les onglets
-            document.getElementById('challengesTab').style.display = 'none';
-            document.getElementById('witnessTab').style.display = 'none';
-            document.getElementById('profileTab').style.display = 'none';
-            
-            // Afficher l'onglet sélectionné
-            document.getElementById(`${tabName}Tab`).style.display = 'block';
-            
-            // Mettre à jour les classes des tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-
-        function setButtonLoading(buttonId, loading = true) {
-            const button = document.getElementById(buttonId);
-            if (loading) {
-                button.innerHTML = '<div class="loading"></div>';
-                button.disabled = true;
-            } else {
-                button.disabled = false;
-            }
-        }
-
-        // Fonctions pour gérer les chips de jours
-        function toggleDaysSelector() {
-            const frequency = document.getElementById('challengeFrequency').value;
-            const daysSelector = document.getElementById('daysSelector');
-            
-            if (frequency === 'custom') {
-                daysSelector.style.display = 'block';
-            } else {
-                daysSelector.style.display = 'none';
-                selectedDays = [];
-            }
-        }
-
-        function toggleDay(chip) {
-            const day = parseInt(chip.dataset.day);
-            
-            if (chip.classList.contains('selected')) {
-                chip.classList.remove('selected');
-                selectedDays = selectedDays.filter(d => d !== day);
-            } else {
-                chip.classList.add('selected');
-                selectedDays.push(day);
-            }
-        }
-
-        // Générer les occurrences
-        function generateOccurrences(startDate, duration, frequency, customDays = []) {
-            const occurrences = [];
-            const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
-            
-            for (let i = 0; i < duration; i++) {
-                const date = new Date(start);
-                date.setDate(start.getDate() + i);
-                const dayOfWeek = date.getDay();
-                
-                let shouldInclude = false;
-                
-                if (frequency === 'daily') {
-                    shouldInclude = true;
-                } else if (frequency === 'custom' && customDays.includes(dayOfWeek)) {
-                    shouldInclude = true;
-                }
-                
-                if (shouldInclude) {
-                    occurrences.push({
-                        id: occurrences.length,
-                        date: date.toISOString(),
-                        dayOfWeek: dayOfWeek,
-                        checked: false,
-                        required: true
-                    });
-                }
-            }
-            
-            return occurrences;
-        }
-
-        // Obtenir le fuseau horaire
-        function getUserTimezone() {
-            return Intl.DateTimeFormat().resolvedOptions().timeZone;
-        }
-
-        // Formater une date
-        function formatDate(date) {
-            const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const d = new Date(date);
-            return `${days[d.getDay()]} ${d.getDate()}`;
-        }
-
-        // Authentification avec Supabase
-        async function signup() {
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            if (!name || !email || !password) {
-                showNotification('Remplis tous les champs !', 'error');
-                return;
-            }
-
-            if (password.length < 6) {
-                showNotification('Le mot de passe doit contenir au moins 6 caractères', 'error');
-                return;
-            }
-
-            setButtonLoading('signupBtn');
-            
-            try {
-                // S'inscrire avec Supabase Auth
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: {
-                        data: {
-                            full_name: name
-                        }
-                    }
-                });
-
-                if (authError) {
-                    throw authError;
-                }
-
-                if (authData?.user) {
-                    // Créer le profil utilisateur
-                    const { error: profileError } = await supabase
-                        .from('users')
-                        .insert([
-                            {
-                                id: authData.user.id,
-                                email: email,
-                                name: name,
-                                points: 0,
-                                badges: [],
-                                created_at: new Date().toISOString()
-                            }
-                        ]);
-
-                    if (profileError) {
-                        console.error('Erreur profil:', profileError);
-                    }
-
-                    currentUser = {
-                        id: authData.user.id,
-                        email: email,
-                        name: name,
-                        points: 0
-                    };
-
-                    showNotification('Compte créé avec succès ! 🎉');
-                    showScreen('dashboardScreen');
-                    updateUserInfo();
-                }
-            } catch (error) {
-                console.error('Erreur inscription:', error);
-                showNotification(error.message || 'Erreur lors de l\'inscription', 'error');
-            } finally {
-                document.getElementById('signupBtn').innerHTML = 'Créer mon compte';
-                document.getElementById('signupBtn').disabled = false;
-            }
-        }
-
-        async function login() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (!email || !password) {
-                showNotification('Remplis tous les champs !', 'error');
-                return;
-            }
-
-            setButtonLoading('loginBtn');
-            
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) {
-                    throw error;
-                }
-
-                if (data?.user) {
-                    // Récupérer les données du profil
-                    const { data: profile, error: profileError } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', data.user.id)
-                        .single();
-
-                    if (profileError) {
-                        console.error('Erreur profil:', profileError);
-                    }
-
-                    currentUser = {
-                        id: data.user.id,
-                        email: data.user.email,
-                        name: profile?.name || data.user.user_metadata?.full_name || 'Utilisateur',
-                        points: profile?.points || 0
-                    };
-
-                    showNotification(`Bon retour ${currentUser.name} ! 👋`);
-                    showScreen('dashboardScreen');
-                    updateUserInfo();
-                }
-            } catch (error) {
-                console.error('Erreur connexion:', error);
-                showNotification('Email ou mot de passe incorrect', 'error');
-            } finally {
-                document.getElementById('loginBtn').innerHTML = 'Se connecter';
-                document.getElementById('loginBtn').disabled = false;
-            }
-        }
-
-        async function logout() {
-            await supabase.auth.signOut();
-            currentUser = null;
-            showScreen('loginScreen');
-            showNotification('À bientôt ! 👋');
-        }
-
-        function updateUserInfo() {
-            if (!currentUser) return;
-            
-            document.getElementById('userInfo').style.display = 'flex';
-            document.getElementById('userEmail').textContent = currentUser.name;
-            document.getElementById('userPoints').textContent = `${currentUser.points} pts`;
-            document.getElementById('profileName').textContent = currentUser.name;
-            document.getElementById('profileEmail').textContent = currentUser.email;
-        }
-
-        // Gestion des challenges avec Supabase
-        function selectGage(element, type) {
-            // Retirer la sélection précédente
-            document.querySelectorAll('.gage-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            element.classList.add('selected');
-            selectedGage = type;
-            
-            // Afficher le champ personnalisé si nécessaire
-            const customField = document.getElementById('customGage');
-            if (type === 'custom') {
-                customField.style.display = 'block';
-            } else {
-                customField.style.display = 'none';
-            }
-        }
-
-        async function createChallenge() {
-            const title = document.getElementById('challengeTitle').value;
-            const duration = parseInt(document.getElementById('challengeDuration').value);
-            const frequency = document.getElementById('challengeFrequency').value;
-            const witnessEmail = document.getElementById('witnessEmail').value;
-            const reminderTime = document.getElementById('reminderTime').value;
-            
-            if (!title || !witnessEmail || !selectedGage) {
-                showNotification('Remplis tous les champs !', 'error');
-                return;
-            }
-            
-            if (frequency === 'custom' && selectedDays.length === 0) {
-                showNotification('Sélectionne au moins un jour !', 'error');
-                return;
-            }
-            
-            let gageText = '';
-            if (selectedGage === 'pompes') gageText = 'Faire 30 pompes';
-            else if (selectedGage === 'cafe') gageText = 'Payer un café/resto au témoin';
-            else if (selectedGage === 'photo') gageText = 'Poster une photo embarrassante';
-            else if (selectedGage === 'don') gageText = 'Faire un don de 10€';
-            else if (selectedGage === 'custom') gageText = document.getElementById('customGage').value;
-            
-            setButtonLoading('createChallengeBtn');
-
-            try {
-                const startDate = new Date();
-                const occurrences = generateOccurrences(startDate, duration, frequency, selectedDays);
-                
-                const newChallenge = {
-                    user_id: currentUser.id,
-                    title,
-                    duration,
-                    frequency,
-                    custom_days: frequency === 'custom' ? selectedDays : [],
-                    witness_email: witnessEmail,
-                    gage: gageText,
-                    status: 'active',
-                    start_date: startDate.toISOString(),
-                    end_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString(),
-                    occurrences: occurrences,
-                    timezone: getUserTimezone(),
-                    reminder_time: reminderTime,
-                    completion_rate: 0,
-                    current_streak: 0
-                };
-                
-                const { data, error } = await supabase
-                    .from('challenges')
-                    .insert([newChallenge])
-                    .select();
-
-                if (error) {
-                    throw error;
-                }
-
-                // Ajouter des points pour la création
-                currentUser.points += 10;
-                await supabase
-                    .from('users')
-                    .update({ points: currentUser.points })
-                    .eq('id', currentUser.id);
-
-                updateUserInfo();
-                
-                showNotification(`Challenge créé ! Un email a été envoyé à ${witnessEmail} 📧`);
-                
-                // Réinitialiser le formulaire
-                selectedDays = [];
-                document.querySelectorAll('.day-chip').forEach(chip => {
-                    chip.classList.remove('selected');
-                });
-                
-                showScreen('dashboardScreen');
-            } catch (error) {
-                console.error('Erreur création challenge:', error);
-                showNotification('Erreur lors de la création du challenge', 'error');
-            } finally {
-                document.getElementById('createChallengeBtn').innerHTML = 'Créer le challenge';
-                document.getElementById('createChallengeBtn').disabled = false;
-            }
-        }
-
-        async function loadDashboard() {
-            if (!currentUser) return;
-            
-            try {
-                // Charger les challenges de l'utilisateur
-                const { data: userChallenges, error } = await supabase
-                    .from('challenges')
-                    .select('*')
-                    .eq('user_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    throw error;
-                }
-
-                challenges = userChallenges || [];
-                const challengesList = document.getElementById('challengesList');
-                
-                if (challenges.length === 0) {
-                    challengesList.innerHTML = `
-                        <div class="empty-state">
-                            <p>Aucun challenge actif</p>
-                            <p style="margin-top: 10px;">Crée ton premier challenge pour commencer ! 🚀</p>
-                        </div>
-                    `;
-                } else {
-                    challengesList.innerHTML = challenges.map(challenge => {
-                        const progress = calculateProgress(challenge);
-                        const statusClass = challenge.status === 'active' ? 'status-active' : 
-                                           challenge.status === 'completed' ? 'status-completed' : 'status-failed';
-                        
-                        return `
-                            <div class="challenge-card" onclick="viewChallenge(${challenge.id})">
-                                <div class="challenge-header">
-                                    <div class="challenge-title">${challenge.title}</div>
-                                    <div class="challenge-status ${statusClass}">${challenge.status}</div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${progress}%"></div>
-                                </div>
-                                <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
-                                    Témoin : ${challenge.witness_email}
-                                </p>
-                            </div>
-                        `;
-                    }).join('');
-                }
-                
-                // Mettre à jour le badge du nombre de challenges
-                document.getElementById('challengesBadge').textContent = challenges.length;
-                
-                // Mettre à jour les statistiques
-                updateStats(challenges);
-            } catch (error) {
-                console.error('Erreur chargement dashboard:', error);
-                showNotification('Erreur lors du chargement des données', 'error');
-            }
-        }
-
-        function calculateProgress(challenge) {
-            if (!challenge.occurrences) return 0;
-            
-            const totalOccurrences = challenge.occurrences.length;
-            const checkedOccurrences = challenge.occurrences.filter(o => o.checked).length;
-            return totalOccurrences > 0 ? Math.round((checkedOccurrences / totalOccurrences) * 100) : 0;
-        }
-
-        function calculateStreak(challenge) {
-            if (!challenge.occurrences) return 0;
-            
-            let streak = 0;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Trier les occurrences par date décroissante
-            const sortedOccurrences = [...challenge.occurrences].sort((a, b) => 
-                new Date(b.date) - new Date(a.date)
-            );
-            
-            // Compter les occurrences consécutives réussies
-            for (let occurrence of sortedOccurrences) {
-                const occDate = new Date(occurrence.date);
-                occDate.setHours(0, 0, 0, 0);
-                
-                // Ne compter que les occurrences passées ou d'aujourd'hui
-                if (occDate <= today) {
-                    if (occurrence.checked) {
-                        streak++;
-                    } else {
-                        break; // Le streak est cassé
-                    }
-                }
-            }
-            
-            return streak;
-        }
-
-        function updateStats(challenges) {
-            // Calculer le meilleur streak actuel parmi tous les challenges
-            let maxStreak = 0;
-            challenges.forEach(challenge => {
-                const streak = calculateStreak(challenge);
-                if (streak > maxStreak) {
-                    maxStreak = streak;
-                }
-            });
-            
-            document.getElementById('streakCount').textContent = maxStreak;
-            
-            // Taux de réussite global
-            let totalOccurrences = 0;
-            let completedOccurrences = 0;
-            
-            challenges.forEach(challenge => {
-                if (challenge.occurrences) {
-                    totalOccurrences += challenge.occurrences.length;
-                    completedOccurrences += challenge.occurrences.filter(o => o.checked).length;
-                }
-            });
-            
-            const completionRate = totalOccurrences > 0 ? 
-                Math.round((completedOccurrences / totalOccurrences) * 100) : 0;
-            
-            document.getElementById('completionRate').textContent = `${completionRate}%`;
-            document.getElementById('totalPoints').textContent = currentUser.points;
-        }
-
-        function viewChallenge(challengeId) {
-            currentChallengeId = challengeId;
-            const challenge = challenges.find(c => c.id === challengeId);
-            
-            if (!challenge) return;
-            
-            document.getElementById('detailTitle').textContent = challenge.title;
-            document.getElementById('detailWitness').textContent = challenge.witness_email;
-            document.getElementById('detailGage').textContent = challenge.gage;
-            
-            // Afficher les occurrences de la semaine en cours
-            const grid = document.getElementById('checkinGrid');
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Trouver les 7 prochaines occurrences à partir d'aujourd'hui
-            const upcomingOccurrences = [];
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Lundi de cette semaine
-            
-            for (let i = 0; i < 7; i++) {
-                const checkDate = new Date(startOfWeek);
-                checkDate.setDate(startOfWeek.getDate() + i);
-                
-                const occurrence = challenge.occurrences ? 
-                    challenge.occurrences.find(o => {
-                        const oDate = new Date(o.date);
-                        oDate.setHours(0, 0, 0, 0);
-                        return oDate.getTime() === checkDate.getTime();
-                    }) : null;
-                
-                upcomingOccurrences.push({
-                    date: checkDate,
-                    occurrence: occurrence,
-                    isToday: checkDate.getTime() === today.getTime()
-                });
-            }
-            
-            grid.innerHTML = upcomingOccurrences.map((item, index) => {
-                const dateStr = formatDate(item.date);
-                const isChecked = item.occurrence && item.occurrence.checked;
-                const isRequired = item.occurrence && item.occurrence.required;
-                const isPast = item.date < today && !item.isToday;
-                
-                let classes = 'day-box';
-                if (isChecked) classes += ' checked';
-                if (!isRequired) classes += ' not-required';
-                
-                return `
-                    <div class="${classes}" data-occurrence-id="${item.occurrence ? item.occurrence.id : -1}">
-                        <div style="font-size: 11px; font-weight: 600;">${dateStr}</div>
-                        ${isChecked ? '<div style="font-size: 20px;">✓</div>' : 
-                          item.isToday && isRequired ? '<div style="font-size: 10px;">Aujourd\'hui</div>' : ''}
-                    </div>
-                `;
-            }).join('');
-            
-            // Mettre à jour la barre de progression
-            const progress = calculateProgress(challenge);
-            document.getElementById('detailProgress').style.width = `${progress}%`;
-            
-            const checkedCount = challenge.occurrences ? challenge.occurrences.filter(o => o.checked).length : 0;
-            const totalCount = challenge.occurrences ? challenge.occurrences.length : 0;
-            document.getElementById('detailStats').textContent = 
-                `${checkedCount} / ${totalCount} complétés • Série : ${calculateStreak(challenge)} 🔥`;
-            
-            // Vérifier si check-in déjà fait aujourd'hui
-            const todayOccurrence = challenge.occurrences ? 
-                challenge.occurrences.find(o => {
-                    const oDate = new Date(o.date);
-                    oDate.setHours(0, 0, 0, 0);
-                    return oDate.getTime() === today.getTime();
-                }) : null;
-            
-            const checkinBtn = document.getElementById('checkinBtn');
-            if (!todayOccurrence) {
-                checkinBtn.textContent = 'Pas de check-in prévu aujourd\'hui';
-                checkinBtn.disabled = true;
-                checkinBtn.style.opacity = '0.5';
-            } else if (todayOccurrence.checked) {
-                checkinBtn.textContent = '✓ Check-in fait aujourd\'hui';
-                checkinBtn.disabled = true;
-                checkinBtn.style.opacity = '0.5';
-            } else {
-                checkinBtn.textContent = '✅ Check-in du jour';
-                checkinBtn.disabled = false;
-                checkinBtn.style.opacity = '1';
-            }
-            
-            showScreen('challengeDetailScreen');
-        }
-
-        async function checkIn() {
-            const challenge = challenges.find(c => c.id === currentChallengeId);
-            if (!challenge || !challenge.occurrences) return;
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Trouver l'occurrence d'aujourd'hui
-            const todayOccurrence = challenge.occurrences.find(o => {
-                const oDate = new Date(o.date);
-                oDate.setHours(0, 0, 0, 0);
-                return oDate.getTime() === today.getTime();
-            });
-            
-            if (!todayOccurrence || todayOccurrence.checked) return;
-            
-            try {
-                // Marquer comme complété
-                todayOccurrence.checked = true;
-                
-                // Mettre à jour le streak
-                challenge.current_streak = calculateStreak(challenge);
-                
-                // Mettre à jour dans Supabase
-                const { error } = await supabase
-                    .from('challenges')
-                    .update({ 
-                        occurrences: challenge.occurrences,
-                        current_streak: challenge.current_streak
-                    })
-                    .eq('id', currentChallengeId);
-
-                if (error) {
-                    throw error;
-                }
-
-                // Créer l'entrée de check-in
-                await supabase
-                    .from('checkins')
-                    .insert([{
-                        user_id: currentUser.id,
-                        challenge_id: currentChallengeId,
-                        occurrence_id: todayOccurrence.id,
-                        checked_at: new Date().toISOString()
-                    }]);
-                
-                // Ajouter des points
-                currentUser.points += 5;
-                if (challenge.current_streak > 0 && challenge.current_streak % 7 === 0) {
-                    // Bonus de série hebdomadaire
-                    currentUser.points += 20;
-                    showNotification(`Série de ${challenge.current_streak} jours ! +25 points total ! 🔥`);
-                } else {
-                    showNotification('Check-in validé ! +5 points 🎉');
-                }
-                
-                // Mettre à jour les points dans Supabase
-                await supabase
-                    .from('users')
-                    .update({ points: currentUser.points })
-                    .eq('id', currentUser.id);
-                
-                updateUserInfo();
-                
-                // Rafraîchir l'affichage
-                viewChallenge(currentChallengeId);
-                
-                // Vérifier si le challenge est complété
-                const allCompleted = challenge.occurrences.every(o => o.checked);
-                if (allCompleted) {
-                    challenge.status = 'completed';
-                    currentUser.points += 50; // Bonus de complétion
-                    
-                    await supabase
-                        .from('challenges')
-                        .update({ status: 'completed' })
-                        .eq('id', currentChallengeId);
-
-                    await supabase
-                        .from('users')
-                        .update({ points: currentUser.points })
-                        .eq('id', currentUser.id);
-
-                    updateUserInfo();
-                    showNotification('Challenge complété ! +50 points bonus ! 🏆');
-                }
-            } catch (error) {
-                console.error('Erreur check-in:', error);
-                showNotification('Erreur lors du check-in', 'error');
-            }
-        }
-
-        function uploadProof() {
-            showNotification('📸 Fonctionnalité de preuve photo disponible dans la version complète !');
-        }
-
-        // Initialisation de l'application
-        async function initApp() {
-            try {
-                // Vérifier si l'utilisateur est déjà connecté
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session?.user) {
-                    // Récupérer les données du profil
-                    const { data: profile, error } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (!error && profile) {
-                        currentUser = {
-                            id: session.user.id,
-                            email: session.user.email,
-                            name: profile.name,
-                            points: profile.points || 0
-                        };
-
-                        showScreen('dashboardScreen');
-                        updateUserInfo();
-                    }
-                }
-            } catch (error) {
-                console.error('Erreur initialisation:', error);
-            }
-
-            // Afficher un message de bienvenue
-            setTimeout(() => {
-                if (!currentUser) {
-                    showNotification('🎯 Bienvenue sur MotiveMe ! Crée ton compte pour commencer');
-                }
-            }, 500);
-        }
-
-        // Gérer les changements d'état d'authentification
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                showScreen('loginScreen');
-            }
-        });
-
-        // Initialiser l'application au chargement
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+    <!-- Application modulaire sécurisée -->
+    <script type="module" src="/js/app.js"></script>
 </body>
 </html>
