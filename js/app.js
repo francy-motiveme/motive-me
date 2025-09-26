@@ -70,12 +70,14 @@ class MotiveMeApp {
         window.createChallenge = () => this.createChallenge();
         window.checkIn = () => this.checkIn();
         window.switchTab = (tab) => this.switchTab(tab);
-        window.showScreen = (screenId) => showScreen(screenId);
+        window.showScreen = (screenId) => this.showScreen(screenId);
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
         window.selectGage = (element, gage) => this.selectGage(element, gage);
         window.viewChallenge = (id) => this.viewChallenge(id);
         window.uploadProof = () => this.uploadProof();
+        window.loadRecentBadges = () => this.loadRecentBadges();
+        window.loadBadgesScreen = () => this.loadBadgesScreen();
 
         // Gérer les changements d'écran
         document.addEventListener('screenChange', (e) => {
@@ -344,6 +346,8 @@ class MotiveMeApp {
 
     // ========== GESTION ONGLETS ==========
     switchTab(tabName) {
+        this.activeTab = tabName;
+        
         // Mettre à jour les onglets visuels
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
@@ -360,6 +364,15 @@ class MotiveMeApp {
         if (targetTab) {
             targetTab.style.display = 'block';
         }
+
+        // Charger les données selon l'onglet
+        if (tabName === 'challenges') {
+            challengeManager.loadDashboard();
+            // Charger aussi les badges récents
+            this.loadRecentBadges();
+        }
+        
+        console.log(`📱 Onglet ${tabName} activé`);
 
         this.activeTab = tabName;
     }
@@ -651,6 +664,115 @@ class MotiveMeApp {
     // ========== UPLOAD PREUVE ==========
     uploadProof() {
         showNotification('📸 Fonctionnalité de preuve photo disponible dans la version complète !');
+    }
+
+    // ========== GESTION ÉCRANS ==========
+    showScreen(screenId) {
+        showScreen(screenId);
+        
+        // Charger les données selon l'écran
+        if (screenId === 'badgesScreen') {
+            this.loadBadgesScreen();
+        }
+    }
+
+    // ========== GESTION BADGES ==========
+    async loadRecentBadges() {
+        const recentBadgesEl = document.getElementById('recentBadges');
+        if (!recentBadgesEl || !authManager.isAuthenticated()) return;
+
+        try {
+            const user = authManager.getCurrentUser();
+            const badges = user.badges || [];
+            
+            if (badges.length === 0) {
+                recentBadgesEl.innerHTML = `
+                    <div class="no-badges" style="text-align: center; color: #6b7280; font-size: 14px; width: 100%; padding: 20px;">
+                        Complétez des challenges pour débloquer des badges !
+                    </div>
+                `;
+                return;
+            }
+
+            // Afficher les 5 badges les plus récents
+            const recentBadges = badges
+                .sort((a, b) => new Date(b.earnedAt) - new Date(a.earnedAt))
+                .slice(0, 5);
+
+            recentBadgesEl.innerHTML = recentBadges.map(badge => `
+                <div class="badge-mini earned">
+                    <div class="badge-mini-icon">${badge.icon}</div>
+                    <div class="badge-mini-name">${badge.name}</div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('❌ Erreur chargement badges récents:', error);
+        }
+    }
+
+    async loadBadgesScreen() {
+        const badgeCountEl = document.getElementById('badgeCount');
+        const badgePointsEl = document.getElementById('badgePoints');
+        const badgeCategoriesEl = document.getElementById('badgeCategories');
+        
+        if (!authManager.isAuthenticated()) return;
+
+        try {
+            const user = authManager.getCurrentUser();
+            const userBadges = user.badges || [];
+            const stats = badgeManager.getUserBadgeStats(userBadges);
+            
+            // Mettre à jour les statistiques
+            if (badgeCountEl) badgeCountEl.textContent = userBadges.length;
+            if (badgePointsEl) badgePointsEl.textContent = stats.totalPoints;
+
+            // Générer les catégories de badges
+            if (badgeCategoriesEl) {
+                const categories = ['starter', 'streak', 'achievement', 'social', 'special', 'level'];
+                const userBadgeIds = userBadges.map(b => b.id);
+
+                let html = '';
+                for (const type of categories) {
+                    const typeBadges = badgeManager.getBadgesByType(type);
+                    if (typeBadges.length === 0) continue;
+
+                    const typeNames = {
+                        starter: '🎯 Premiers Pas',
+                        streak: '🔥 Séries',
+                        achievement: '🏆 Accomplissements',
+                        social: '👥 Social',
+                        special: '✨ Spéciaux',
+                        level: '📊 Niveaux'
+                    };
+
+                    html += `
+                        <div class="badge-category">
+                            <h3>${typeNames[type]}</h3>
+                            <div class="badges-grid">
+                    `;
+
+                    typeBadges.forEach(badge => {
+                        const earned = userBadgeIds.includes(badge.id);
+                        const progress = !earned ? badgeManager.getBadgeProgress(badge.id, user, user.stats || {}, []) : null;
+                        html += badgeManager.getBadgeHTML(badge, earned, progress);
+                    });
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+
+                badgeCategoriesEl.innerHTML = html || '<div class="no-badges">Aucun badge disponible pour le moment.</div>';
+            }
+
+        } catch (error) {
+            console.error('❌ Erreur chargement écran badges:', error);
+            if (badgeCategoriesEl) {
+                badgeCategoriesEl.innerHTML = '<div class="error">Erreur lors du chargement des badges.</div>';
+            }
+        }
     }
 }
 

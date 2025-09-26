@@ -495,6 +495,41 @@
                 height: 100vh;
             }
         }
+
+        /* Styles pour les badges */
+        .recent-badges {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .badge-mini {
+            min-width: 60px;
+            text-align: center;
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            flex-shrink: 0;
+        }
+
+        .badge-mini.earned {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        }
+
+        .badge-mini-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .badge-mini-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: #1f2937;
+        }
     </style>
 </head>
 <body>
@@ -586,6 +621,21 @@
                     <div class="stat-card">
                         <div class="stat-value" id="totalPoints">0</div>
                         <div class="stat-label">Points totaux ⭐</div>
+                    </div>
+                </div>
+
+                <!-- Section Badges récents -->
+                <div style="margin: 20px 0;">
+                    <h3 style="display: flex; align-items: center; gap: 10px;">
+                        🏆 Badges récents
+                        <button class="secondary" onclick="showScreen('badgesScreen')" style="margin-left: auto; padding: 5px 10px; font-size: 12px;">
+                            Voir tout
+                        </button>
+                    </h3>
+                    <div id="recentBadges" class="recent-badges" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 0;">
+                        <div class="no-badges" style="text-align: center; color: #6b7280; font-size: 14px; width: 100%; padding: 20px;">
+                            Complétez des challenges pour débloquer des badges !
+                        </div>
                     </div>
                 </div>
 
@@ -738,6 +788,35 @@
                 Retour
             </button>
         </div>
+    </div>
+
+    <!-- Écran Badges -->
+    <div class="screen" id="badgesScreen" style="display: none;">
+        <div class="header">
+            <h2>🏆 Mes Badges</h2>
+            <p class="subtitle">Progression et accomplissements</p>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-card">
+                    <div class="stat-value" id="badgeCount">0</div>
+                    <div class="stat-label">Badges obtenus</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="badgePoints">0</div>
+                    <div class="stat-label">Points de badges</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="badgeCategories">
+            <!-- Contenu dynamique généré par JS -->
+        </div>
+
+        <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 20px; width: 100%;">
+            ← Retour au tableau de bord
+        </button>
     </div>
 
     <!-- Application modulaire sécurisée -->
