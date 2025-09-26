@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -402,6 +403,21 @@
             color: #6b7280;
         }
 
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 480px) {
             .app-container {
                 border-radius: 0;
@@ -437,7 +453,7 @@
                 <input type="password" id="loginPassword" placeholder="••••••••">
             </div>
             
-            <button onclick="login()">Se connecter</button>
+            <button onclick="login()" id="loginBtn">Se connecter</button>
             
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Pas encore de compte ? 
@@ -464,7 +480,7 @@
                 <input type="password" id="signupPassword" placeholder="••••••••">
             </div>
             
-            <button onclick="signup()">Créer mon compte</button>
+            <button onclick="signup()" id="signupBtn">Créer mon compte</button>
             
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Déjà un compte ? 
@@ -476,7 +492,7 @@
         <div class="screen" id="dashboardScreen">
             <div class="tab-bar">
                 <div class="tab active" onclick="switchTab('challenges')">
-                    Challenges <span class="badge">3</span>
+                    Challenges <span class="badge" id="challengesBadge">0</span>
                 </div>
                 <div class="tab" onclick="switchTab('witness')">
                     Témoin
@@ -615,7 +631,7 @@
                 <input type="text" id="customGage" placeholder="Décris ton gage personnalisé" style="display: none; margin-top: 10px;">
             </div>
 
-            <button onclick="createChallenge()">Créer le challenge</button>
+            <button onclick="createChallenge()" id="createChallengeBtn">Créer le challenge</button>
             <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 10px;">
                 Annuler
             </button>
@@ -657,26 +673,21 @@
     <!-- Notification -->
     <div class="notification" id="notification"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Configuration Supabase - Ces valeurs viennent de vos secrets
+        const SUPABASE_URL = 'https://lcbvjrukxjnenzficeci.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjYnZqcnVreGpuZW56ZmljZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzODUxODksImV4cCI6MjA3Mzk2MTE4OX0.xU2myPnUfX6VmF0yk4LWRbmQcenyYDKMP-r80XAhgp8';
+
+        // Initialiser Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // État global de l'application
         let currentUser = null;
         let challenges = [];
         let selectedGage = null;
         let currentChallengeId = null;
         let selectedDays = [];
-
-        // Base de données simulée (localStorage) - Persistante
-        const DB = {
-            users: JSON.parse(localStorage.getItem('users') || '[]'),
-            challenges: JSON.parse(localStorage.getItem('challenges') || '[]'),
-            checkins: JSON.parse(localStorage.getItem('checkins') || '[]'),
-            
-            save() {
-                localStorage.setItem('users', JSON.stringify(this.users));
-                localStorage.setItem('challenges', JSON.stringify(this.challenges));
-                localStorage.setItem('checkins', JSON.stringify(this.checkins));
-            }
-        };
 
         // Fonctions utilitaires
         function showNotification(message, type = 'success') {
@@ -714,6 +725,16 @@
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
+        }
+
+        function setButtonLoading(buttonId, loading = true) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.innerHTML = '<div class="loading"></div>';
+                button.disabled = true;
+            } else {
+                button.disabled = false;
+            }
         }
 
         // Fonctions pour gérer les chips de jours
@@ -786,8 +807,8 @@
             return `${days[d.getDay()]} ${d.getDate()}`;
         }
 
-        // Authentification
-        function signup() {
+        // Authentification avec Supabase
+        async function signup() {
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
@@ -796,34 +817,70 @@
                 showNotification('Remplis tous les champs !', 'error');
                 return;
             }
-            
-            // Vérifier si l'utilisateur existe déjà
-            if (DB.users.find(u => u.email === email)) {
-                showNotification('Cet email est déjà utilisé', 'error');
+
+            if (password.length < 6) {
+                showNotification('Le mot de passe doit contenir au moins 6 caractères', 'error');
                 return;
             }
+
+            setButtonLoading('signupBtn');
             
-            // Créer le nouvel utilisateur
-            const newUser = {
-                id: Date.now(),
-                name,
-                email,
-                password, // En prod, on hasherait le mot de passe !
-                points: 0,
-                badges: [],
-                createdAt: new Date().toISOString()
-            };
-            
-            DB.users.push(newUser);
-            DB.save();
-            
-            currentUser = newUser;
-            showNotification('Compte créé avec succès ! 🎉');
-            showScreen('dashboardScreen');
-            updateUserInfo();
+            try {
+                // S'inscrire avec Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name
+                        }
+                    }
+                });
+
+                if (authError) {
+                    throw authError;
+                }
+
+                if (authData?.user) {
+                    // Créer le profil utilisateur
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .insert([
+                            {
+                                id: authData.user.id,
+                                email: email,
+                                name: name,
+                                points: 0,
+                                badges: [],
+                                created_at: new Date().toISOString()
+                            }
+                        ]);
+
+                    if (profileError) {
+                        console.error('Erreur profil:', profileError);
+                    }
+
+                    currentUser = {
+                        id: authData.user.id,
+                        email: email,
+                        name: name,
+                        points: 0
+                    };
+
+                    showNotification('Compte créé avec succès ! 🎉');
+                    showScreen('dashboardScreen');
+                    updateUserInfo();
+                }
+            } catch (error) {
+                console.error('Erreur inscription:', error);
+                showNotification(error.message || 'Erreur lors de l\'inscription', 'error');
+            } finally {
+                document.getElementById('signupBtn').innerHTML = 'Créer mon compte';
+                document.getElementById('signupBtn').disabled = false;
+            }
         }
 
-        function login() {
+        async function login() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -831,21 +888,53 @@
                 showNotification('Remplis tous les champs !', 'error');
                 return;
             }
+
+            setButtonLoading('loginBtn');
             
-            const user = DB.users.find(u => u.email === email && u.password === password);
-            
-            if (!user) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                if (data?.user) {
+                    // Récupérer les données du profil
+                    const { data: profile, error: profileError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    if (profileError) {
+                        console.error('Erreur profil:', profileError);
+                    }
+
+                    currentUser = {
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: profile?.name || data.user.user_metadata?.full_name || 'Utilisateur',
+                        points: profile?.points || 0
+                    };
+
+                    showNotification(`Bon retour ${currentUser.name} ! 👋`);
+                    showScreen('dashboardScreen');
+                    updateUserInfo();
+                }
+            } catch (error) {
+                console.error('Erreur connexion:', error);
                 showNotification('Email ou mot de passe incorrect', 'error');
-                return;
+            } finally {
+                document.getElementById('loginBtn').innerHTML = 'Se connecter';
+                document.getElementById('loginBtn').disabled = false;
             }
-            
-            currentUser = user;
-            showNotification(`Bon retour ${user.name} ! 👋`);
-            showScreen('dashboardScreen');
-            updateUserInfo();
         }
 
-        function logout() {
+        async function logout() {
+            await supabase.auth.signOut();
             currentUser = null;
             showScreen('loginScreen');
             showNotification('À bientôt ! 👋');
@@ -861,7 +950,7 @@
             document.getElementById('profileEmail').textContent = currentUser.email;
         }
 
-        // Gestion des challenges
+        // Gestion des challenges avec Supabase
         function selectGage(element, type) {
             // Retirer la sélection précédente
             document.querySelectorAll('.gage-option').forEach(opt => {
@@ -880,7 +969,7 @@
             }
         }
 
-        function createChallenge() {
+        async function createChallenge() {
             const title = document.getElementById('challengeTitle').value;
             const duration = parseInt(document.getElementById('challengeDuration').value);
             const frequency = document.getElementById('challengeFrequency').value;
@@ -904,87 +993,123 @@
             else if (selectedGage === 'don') gageText = 'Faire un don de 10€';
             else if (selectedGage === 'custom') gageText = document.getElementById('customGage').value;
             
-            const startDate = new Date();
-            const occurrences = generateOccurrences(startDate, duration, frequency, selectedDays);
-            
-            const newChallenge = {
-                id: Date.now(),
-                userId: currentUser.id,
-                title,
-                duration,
-                frequency,
-                customDays: frequency === 'custom' ? selectedDays : [],
-                witnessEmail,
-                gage: gageText,
-                status: 'active',
-                startDate: startDate.toISOString(),
-                endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString(),
-                occurrences: occurrences,
-                timezone: getUserTimezone(),
-                reminderTime: reminderTime,
-                completionRate: 0,
-                currentStreak: 0
-            };
-            
-            DB.challenges.push(newChallenge);
-            DB.save();
-            
-            // Simuler l'envoi d'un email au témoin
-            showNotification(`Challenge créé ! Un email a été envoyé à ${witnessEmail} 📧`);
-            
-            // Ajouter des points pour la création
-            currentUser.points += 10;
-            DB.save();
-            updateUserInfo();
-            
-            // Réinitialiser le formulaire
-            selectedDays = [];
-            document.querySelectorAll('.day-chip').forEach(chip => {
-                chip.classList.remove('selected');
-            });
-            
-            showScreen('dashboardScreen');
+            setButtonLoading('createChallengeBtn');
+
+            try {
+                const startDate = new Date();
+                const occurrences = generateOccurrences(startDate, duration, frequency, selectedDays);
+                
+                const newChallenge = {
+                    user_id: currentUser.id,
+                    title,
+                    duration,
+                    frequency,
+                    custom_days: frequency === 'custom' ? selectedDays : [],
+                    witness_email: witnessEmail,
+                    gage: gageText,
+                    status: 'active',
+                    start_date: startDate.toISOString(),
+                    end_date: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString(),
+                    occurrences: occurrences,
+                    timezone: getUserTimezone(),
+                    reminder_time: reminderTime,
+                    completion_rate: 0,
+                    current_streak: 0
+                };
+                
+                const { data, error } = await supabase
+                    .from('challenges')
+                    .insert([newChallenge])
+                    .select();
+
+                if (error) {
+                    throw error;
+                }
+
+                // Ajouter des points pour la création
+                currentUser.points += 10;
+                await supabase
+                    .from('users')
+                    .update({ points: currentUser.points })
+                    .eq('id', currentUser.id);
+
+                updateUserInfo();
+                
+                showNotification(`Challenge créé ! Un email a été envoyé à ${witnessEmail} 📧`);
+                
+                // Réinitialiser le formulaire
+                selectedDays = [];
+                document.querySelectorAll('.day-chip').forEach(chip => {
+                    chip.classList.remove('selected');
+                });
+                
+                showScreen('dashboardScreen');
+            } catch (error) {
+                console.error('Erreur création challenge:', error);
+                showNotification('Erreur lors de la création du challenge', 'error');
+            } finally {
+                document.getElementById('createChallengeBtn').innerHTML = 'Créer le challenge';
+                document.getElementById('createChallengeBtn').disabled = false;
+            }
         }
 
-        function loadDashboard() {
+        async function loadDashboard() {
             if (!currentUser) return;
             
-            // Charger les challenges de l'utilisateur
-            const userChallenges = DB.challenges.filter(c => c.userId === currentUser.id);
-            const challengesList = document.getElementById('challengesList');
-            
-            if (userChallenges.length === 0) {
-                challengesList.innerHTML = `
-                    <div class="empty-state">
-                        <p>Aucun challenge actif</p>
-                        <p style="margin-top: 10px;">Crée ton premier challenge pour commencer ! 🚀</p>
-                    </div>
-                `;
-            } else {
-                challengesList.innerHTML = userChallenges.map(challenge => {
-                    const progress = calculateProgress(challenge);
-                    const statusClass = challenge.status === 'active' ? 'status-active' : 
-                                       challenge.status === 'completed' ? 'status-completed' : 'status-failed';
-                    
-                    return `
-                        <div class="challenge-card" onclick="viewChallenge(${challenge.id})">
-                            <div class="challenge-header">
-                                <div class="challenge-title">${challenge.title}</div>
-                                <div class="challenge-status ${statusClass}">${challenge.status}</div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progress}%"></div>
-                            </div>
-                            <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
-                                Témoin : ${challenge.witnessEmail}
-                            </p>
+            try {
+                // Charger les challenges de l'utilisateur
+                const { data: userChallenges, error } = await supabase
+                    .from('challenges')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+
+                challenges = userChallenges || [];
+                const challengesList = document.getElementById('challengesList');
+                
+                if (challenges.length === 0) {
+                    challengesList.innerHTML = `
+                        <div class="empty-state">
+                            <p>Aucun challenge actif</p>
+                            <p style="margin-top: 10px;">Crée ton premier challenge pour commencer ! 🚀</p>
                         </div>
                     `;
-                }).join('');
+                } else {
+                    challengesList.innerHTML = challenges.map(challenge => {
+                        const progress = calculateProgress(challenge);
+                        const statusClass = challenge.status === 'active' ? 'status-active' : 
+                                           challenge.status === 'completed' ? 'status-completed' : 'status-failed';
+                        
+                        return `
+                            <div class="challenge-card" onclick="viewChallenge(${challenge.id})">
+                                <div class="challenge-header">
+                                    <div class="challenge-title">${challenge.title}</div>
+                                    <div class="challenge-status ${statusClass}">${challenge.status}</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
+                                    Témoin : ${challenge.witness_email}
+                                </p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                // Mettre à jour le badge du nombre de challenges
+                document.getElementById('challengesBadge').textContent = challenges.length;
+                
+                // Mettre à jour les statistiques
+                updateStats(challenges);
+            } catch (error) {
+                console.error('Erreur chargement dashboard:', error);
+                showNotification('Erreur lors du chargement des données', 'error');
             }
-            
-            // Mettre à jour les statistiques
-            updateStats(userChallenges);
         }
 
         function calculateProgress(challenge) {
@@ -1057,12 +1182,12 @@
 
         function viewChallenge(challengeId) {
             currentChallengeId = challengeId;
-            const challenge = DB.challenges.find(c => c.id === challengeId);
+            const challenge = challenges.find(c => c.id === challengeId);
             
             if (!challenge) return;
             
             document.getElementById('detailTitle').textContent = challenge.title;
-            document.getElementById('detailWitness').textContent = challenge.witnessEmail;
+            document.getElementById('detailWitness').textContent = challenge.witness_email;
             document.getElementById('detailGage').textContent = challenge.gage;
             
             // Afficher les occurrences de la semaine en cours
@@ -1147,8 +1272,8 @@
             showScreen('challengeDetailScreen');
         }
 
-        function checkIn() {
-            const challenge = DB.challenges.find(c => c.id === currentChallengeId);
+        async function checkIn() {
+            const challenge = challenges.find(c => c.id === currentChallengeId);
             if (!challenge || !challenge.occurrences) return;
             
             const today = new Date();
@@ -1163,43 +1288,79 @@
             
             if (!todayOccurrence || todayOccurrence.checked) return;
             
-            // Marquer comme complété
-            todayOccurrence.checked = true;
-            
-            // Mettre à jour le streak
-            challenge.currentStreak = calculateStreak(challenge);
-            
-            // Ajouter l'entrée dans les checkins pour historique
-            DB.checkins.push({
-                userId: currentUser.id,
-                challengeId: currentChallengeId,
-                occurrenceId: todayOccurrence.id,
-                date: new Date().toISOString()
-            });
-            
-            // Ajouter des points
-            currentUser.points += 5;
-            if (challenge.currentStreak > 0 && challenge.currentStreak % 7 === 0) {
-                // Bonus de série hebdomadaire
-                currentUser.points += 20;
-                showNotification(`Série de ${challenge.currentStreak} jours ! +25 points total ! 🔥`);
-            } else {
-                showNotification('Check-in validé ! +5 points 🎉');
-            }
-            
-            DB.save();
-            
-            // Rafraîchir l'affichage
-            viewChallenge(currentChallengeId);
-            updateUserInfo();
-            
-            // Vérifier si le challenge est complété
-            const allCompleted = challenge.occurrences.every(o => o.checked);
-            if (allCompleted) {
-                challenge.status = 'completed';
-                currentUser.points += 50; // Bonus de complétion
-                DB.save();
-                showNotification('Challenge complété ! +50 points bonus ! 🏆');
+            try {
+                // Marquer comme complété
+                todayOccurrence.checked = true;
+                
+                // Mettre à jour le streak
+                challenge.current_streak = calculateStreak(challenge);
+                
+                // Mettre à jour dans Supabase
+                const { error } = await supabase
+                    .from('challenges')
+                    .update({ 
+                        occurrences: challenge.occurrences,
+                        current_streak: challenge.current_streak
+                    })
+                    .eq('id', currentChallengeId);
+
+                if (error) {
+                    throw error;
+                }
+
+                // Créer l'entrée de check-in
+                await supabase
+                    .from('checkins')
+                    .insert([{
+                        user_id: currentUser.id,
+                        challenge_id: currentChallengeId,
+                        occurrence_id: todayOccurrence.id,
+                        checked_at: new Date().toISOString()
+                    }]);
+                
+                // Ajouter des points
+                currentUser.points += 5;
+                if (challenge.current_streak > 0 && challenge.current_streak % 7 === 0) {
+                    // Bonus de série hebdomadaire
+                    currentUser.points += 20;
+                    showNotification(`Série de ${challenge.current_streak} jours ! +25 points total ! 🔥`);
+                } else {
+                    showNotification('Check-in validé ! +5 points 🎉');
+                }
+                
+                // Mettre à jour les points dans Supabase
+                await supabase
+                    .from('users')
+                    .update({ points: currentUser.points })
+                    .eq('id', currentUser.id);
+                
+                updateUserInfo();
+                
+                // Rafraîchir l'affichage
+                viewChallenge(currentChallengeId);
+                
+                // Vérifier si le challenge est complété
+                const allCompleted = challenge.occurrences.every(o => o.checked);
+                if (allCompleted) {
+                    challenge.status = 'completed';
+                    currentUser.points += 50; // Bonus de complétion
+                    
+                    await supabase
+                        .from('challenges')
+                        .update({ status: 'completed' })
+                        .eq('id', currentChallengeId);
+
+                    await supabase
+                        .from('users')
+                        .update({ points: currentUser.points })
+                        .eq('id', currentUser.id);
+
+                    updateUserInfo();
+                    showNotification('Challenge complété ! +50 points bonus ! 🏆');
+                }
+            } catch (error) {
+                console.error('Erreur check-in:', error);
+                showNotification('Erreur lors du check-in', 'error');
             }
         }
 
@@ -1207,35 +1368,54 @@
             showNotification('📸 Fonctionnalité de preuve photo disponible dans la version complète !');
         }
 
-        // Initialisation de l'app avec des données de démo
-        function initDemo() {
-            // Créer un utilisateur de démo si aucun n'existe
-            if (DB.users.length === 0) {
-                const demoUser = {
-                    id: 1,
-                    name: 'Nicolas',
-                    email: 'demo@motiveme.app',
-                    password: 'demo123',
-                    points: 150,
-                    badges: ['🎯', '💪'],
-                    createdAt: new Date().toISOString()
-                };
+        // Initialisation de l'application
+        async function initApp() {
+            try {
+                // Vérifier si l'utilisateur est déjà connecté
+                const { data: { session } } = await supabase.auth.getSession();
                 
-                DB.users.push(demoUser);
-                DB.save();
-            }
-        }
+                if (session?.user) {
+                    // Récupérer les données du profil
+                    const { data: profile, error } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
 
-        // Initialiser l'application au chargement
-        document.addEventListener('DOMContentLoaded', () => {
-            initDemo();
-            
+                    if (!error && profile) {
+                        currentUser = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            name: profile.name,
+                            points: profile.points || 0
+                        };
+
+                        showScreen('dashboardScreen');
+                        updateUserInfo();
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur initialisation:', error);
+            }
+
             // Afficher un message de bienvenue
             setTimeout(() => {
-                showNotification('🎯 Bienvenue sur MotiveMe ! Connecte-toi avec demo@motiveme.app / demo123');
+                if (!currentUser) {
+                    showNotification('🎯 Bienvenue sur MotiveMe ! Crée ton compte pour commencer');
+                }
             }, 500);
+        }
+
+        // Gérer les changements d'état d'authentification
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                showScreen('loginScreen');
+            }
         });
+
+        // Initialiser l'application au chargement
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
-
 </html>
