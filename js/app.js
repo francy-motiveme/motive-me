@@ -3,6 +3,8 @@ import authManager from './modules/auth.js';
 import challengeManager from './modules/challenges.js';
 import uiManager, { showNotification, showScreen, setLoading } from './modules/ui.js';
 import { Validators } from './modules/validators.js';
+import badgeManager from './modules/badges.js';
+import emailService from './modules/email.js';
 
 class MotiveMeApp {
     constructor() {

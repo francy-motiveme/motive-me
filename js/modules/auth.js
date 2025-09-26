@@ -2,6 +2,7 @@
 import database from './database.js';
 import { Validators } from './validators.js';
 import { showNotification } from './ui.js';
+import badgeManager from './badges.js';
 
 export class AuthManager {
     constructor() {
@@ -225,6 +226,9 @@ export class AuthManager {
                 this.notifyAuthListeners('SIGNED_IN', this.currentUser);
                 console.log('✅ Profil utilisateur chargé:', this.currentUser.name);
                 
+                // Vérifier les nouveaux badges
+                await this.checkUserBadges();
+                
             } else {
                 console.warn('⚠️ Profil utilisateur non trouvé pour:', authUser.email);
                 // Créer un profil basique
@@ -410,6 +414,28 @@ export class AuthManager {
 
     getUserPoints() {
         return this.currentUser?.points || 0;
+    }
+
+    // ========== GESTION BADGES ==========
+    async checkUserBadges() {
+        if (!this.currentUser) return;
+
+        try {
+            const stats = this.currentUser.stats || {};
+            const challenges = []; // À récupérer depuis challengeManager si nécessaire
+            
+            const newBadges = await badgeManager.checkForNewBadges(this.currentUser, stats, challenges);
+            
+            if (newBadges.length > 0) {
+                // Ajouter les nouveaux badges au profil
+                const updatedBadges = [...(this.currentUser.badges || []), ...newBadges];
+                await this.updateUserProfile({ badges: updatedBadges });
+                
+                console.log(`🏆 ${newBadges.length} nouveau(x) badge(s) débloqué(s)`);
+            }
+        } catch (error) {
+            console.error('❌ Erreur vérification badges:', error);
+        }
     }
 
     // ========== UTILITAIRES SÉCURITÉ ==========

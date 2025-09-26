@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotiveMe - Atteins tes objectifs avec la pression sociale</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MotiveMe">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    
+    <!-- SEO et partage social -->
+    <meta name="description" content="Atteins tes objectifs avec la pression sociale et les témoins. Créé des challenges, fais tes check-ins quotidiens et reste motivé !">
+    <meta name="keywords" content="motivation, objectifs, challenges, productivité, habitudes">
+    <meta property="og:title" content="MotiveMe - Challenge Yourself">
+    <meta property="og:description" content="Atteins tes objectifs avec la pression sociale">
+    <meta property="og:image" content="/icons/icon-512x512.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <style>
         * {
             margin: 0;
@@ -725,5 +742,74 @@
 
     <!-- Application modulaire sécurisée -->
     <script type="module" src="/js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('✅ Service Worker registered:', registration);
+                    
+                    // Gérer les mises à jour
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Nouvelle version disponible
+                                if (confirm('Nouvelle version disponible ! Recharger maintenant ?')) {
+                                    window.location.reload();
+                                }
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('❌ Service Worker registration failed:', error);
+                }
+            });
+            
+            // Écouter les messages du service worker
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                console.log('💬 Message from SW:', event.data);
+            });
+        }
+        
+        // Détection d'installation PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Afficher un bouton d'installation personnalisé après 30 secondes
+            setTimeout(() => {
+                if (deferredPrompt && window.uiManager) {
+                    const installId = window.uiManager.showNotification(
+                        'Installer MotiveMe sur votre appareil pour une meilleure expérience !',
+                        'info',
+                        {
+                            duration: 0,
+                            actions: [
+                                {
+                                    label: 'Installer',
+                                    action: 'install',
+                                    handler: async () => {
+                                        try {
+                                            await deferredPrompt.prompt();
+                                            const { outcome } = await deferredPrompt.userChoice;
+                                            console.log('PWA install result:', outcome);
+                                            deferredPrompt = null;
+                                        } catch (error) {
+                                            console.error('PWA install error:', error);
+                                        }
+                                        return true; // Fermer la notification
+                                    }
+                                }
+                            ]
+                        }
+                    );
+                }
+            }, 30000);
+        });
+    </script>
 </body>
 </html>

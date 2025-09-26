@@ -2,6 +2,7 @@
 import database from './database.js';
 import { Validators } from './validators.js';
 import uiManager from './ui.js';
+import emailService from './email.js';
 
 export class ChallengeManager {
     constructor() {
@@ -70,6 +71,9 @@ export class ChallengeManager {
 
             // Créer notification de bienvenue pour le témoin
             await this.notifyWitness(result.data, 'new_challenge');
+            
+            // Envoyer email au témoin
+            await emailService.notifyNewChallenge(result.data, validData.witnessEmail);
 
             // Créer notification utilisateur
             await database.createNotification({
@@ -353,6 +357,9 @@ export class ChallengeManager {
                 
                 await database.updateChallenge(challengeId, { status: 'completed' });
                 await this.notifyWitness(challenge, 'challenge_completed');
+                
+                // Envoyer email témoin de complétion
+                await emailService.notifyChallengeCompleted(challenge, challenge.witness_email);
             }
 
             // Notification de réussite
