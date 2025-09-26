@@ -14,7 +14,9 @@ export default defineConfig({
       'Expires': '0'
     },
     // Configuration pour Replit - permettre tous les hosts
-    allowedHosts: 'all'
+    allowedHosts: 'all',
+    // Force l'acceptation de tous les hosts pour éviter les blocages Replit
+    disableHostCheck: true
   },
   build: {
     outDir: 'dist',
