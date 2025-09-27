@@ -548,17 +548,19 @@
         <div class="screen active" id="loginScreen">
             <h2 style="text-align: center; margin-bottom: 30px;">Bienvenue ! 👋</h2>
             
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="loginEmail" placeholder="ton@email.com">
-            </div>
-            
-            <div class="form-group">
-                <label>Mot de passe</label>
-                <input type="password" id="loginPassword" placeholder="••••••••">
-            </div>
-            
-            <button onclick="login()" id="loginBtn">Se connecter</button>
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="ton@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" id="loginBtn">Se connecter</button>
+            </form>
             
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Pas encore de compte ? 
@@ -570,22 +572,24 @@
         <div class="screen" id="signupScreen">
             <h2 style="text-align: center; margin-bottom: 30px;">Créer ton compte 🚀</h2>
             
-            <div class="form-group">
-                <label>Prénom</label>
-                <input type="text" id="signupName" placeholder="Nicolas">
-            </div>
-            
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="signupEmail" placeholder="ton@email.com">
-            </div>
-            
-            <div class="form-group">
-                <label>Mot de passe</label>
-                <input type="password" id="signupPassword" placeholder="••••••••">
-            </div>
-            
-            <button onclick="signup()" id="signupBtn">Créer mon compte</button>
+            <form id="signupForm" onsubmit="return handleSignup(event)">
+                <div class="form-group">
+                    <label>Prénom</label>
+                    <input type="text" id="signupName" placeholder="Nicolas" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="ton@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="signupPassword" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" id="signupBtn">Créer mon compte</button>
+            </form>
             
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Déjà un compte ? 
