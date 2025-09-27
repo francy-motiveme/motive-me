@@ -5,6 +5,7 @@ import uiManager, { showNotification, showScreen, setLoading } from './modules/u
 import { Validators } from './modules/validators.js';
 import badgeManager from './modules/badges.js';
 import emailService from './modules/email.js';
+import analyticsManager from './modules/analytics.js';
 
 class MotiveMeApp {
     constructor() {

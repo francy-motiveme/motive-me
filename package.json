@@ -8,9 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "playwright test",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "lint": "eslint . --ext js,jsx,ts,tsx",
     "format": "prettier --write .",
+    "security": "npm audit && npm audit fix",
+    "lighthouse": "lighthouse http://localhost:5000 --output json --output-path lighthouse-report.json",
     "start": "vite"
   },
   "keywords": [

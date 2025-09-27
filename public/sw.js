@@ -13,6 +13,9 @@ const STATIC_FILES = [
   '/js/modules/database.js',
   '/js/modules/ui.js',
   '/js/modules/validators.js',
+  '/js/modules/badges.js',
+  '/js/modules/email.js',
+  '/js/modules/analytics.js',
   '/js/components/modal.js',
   '/js/components/notification.js',
   '/manifest.json'
