@@ -68,6 +68,18 @@ class MotiveMeApp {
         window.login = () => this.login();
         window.signup = () => this.signup();
         window.logout = () => this.logout();
+        
+        // Exposer les handlers de formulaires pour les onsubmit dans HTML
+        window.handleLogin = (event) => {
+            event.preventDefault();
+            this.login();
+            return false;
+        };
+        window.handleSignup = (event) => {
+            event.preventDefault();
+            this.signup();
+            return false;
+        };
         window.createChallenge = () => this.createChallenge();
         window.checkIn = () => this.checkIn();
         window.switchTab = (tab) => this.switchTab(tab);
