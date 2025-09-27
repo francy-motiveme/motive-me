@@ -56,9 +56,20 @@ export class BadgeManager {
                 description: '100 jours consécutifs de check-ins',
                 icon: '👑',
                 type: 'streak',
-                points: 1000,
+                points: 2000,
                 rarity: 'legendary',
                 condition: (user, stats) => stats.longest_streak >= 100
+            },
+
+            // Badges avancés selon PROMPT_EXPERT_FINALIZATION
+            'first_witness': {
+                id: 'first_witness',
+                name: 'Témoin Fidèle',
+                description: 'Premier challenge comme témoin',
+                icon: '👁️',
+                type: 'social',
+                points: 100,
+                condition: (user, stats) => (user.witness_count || 0) >= 1
             },
 
             // Badges de performance
@@ -103,9 +114,10 @@ export class BadgeManager {
                 id: 'mentor',
                 name: 'Mentor',
                 description: 'Témoin de 5+ challenges différents',
-                icon: '🎓',
+                icon: '🧙‍♂️',
                 type: 'social',
-                points: 100,
+                points: 1000,
+                rarity: 'epic',
                 condition: (user, stats) => (user.witness_count || 0) >= 5
             },
 
