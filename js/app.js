@@ -71,7 +71,7 @@ class MotiveMeApp {
         window.createChallenge = () => this.createChallenge();
         window.checkIn = () => this.checkIn();
         window.switchTab = (tab) => this.switchTab(tab);
-        window.showScreen = (screenId) => this.showScreen(screenId);
+        window.showScreen = (screenId) => uiManager.showScreen(screenId);
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
         window.selectGage = (element, gage) => this.selectGage(element, gage);
@@ -669,7 +669,7 @@ class MotiveMeApp {
 
     // ========== GESTION ÉCRANS ==========
     showScreen(screenId) {
-        showScreen(screenId);
+        uiManager.showScreen(screenId);
         
         // Charger les données selon l'écran
         if (screenId === 'badgesScreen') {
