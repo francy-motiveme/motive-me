@@ -6,17 +6,18 @@ export default defineConfig({
     port: 5000,
     strictPort: true,
     hmr: {
-      port: 5000
+      port: 5000,
+      host: 'localhost'
     },
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
     },
-    // Configuration pour Replit - permettre tous les hosts
-    allowedHosts: 'all',
-    // Force l'acceptation de tous les hosts pour éviter les blocages Replit
-    disableHostCheck: true
+    // Configuration critique pour Replit - accepter TOUS les hosts
+    allowedHosts: true,
+    // Configuration spécifique Replit pour éviter les blocages
+    origin: 'http://localhost:5000'
   },
   build: {
     outDir: 'dist',
