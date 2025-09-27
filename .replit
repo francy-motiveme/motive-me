@@ -7,7 +7,7 @@ channel = "stable-25_05"
 packages = ["tree"]
 
 [workflows]
-runButton = "Project"
+runButton = "Start MotiveMe"
 
 [[workflows.workflow]]
 name = "Project"
@@ -29,6 +29,32 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Start MotiveMe"
+author = 48064113
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Start MotiveMe"
+author = 48064113
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 [[ports]]
 localPort = 5000
