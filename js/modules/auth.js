@@ -35,6 +35,26 @@ export class AuthManager {
         }
     }
 
+    // ========== VÉRIFICATION SESSION ACTIVE ==========
+    async checkAndLoadActiveSession() {
+        try {
+            console.log('🔄 Vérification session active...');
+            const sessionResult = await database.getCurrentSession();
+            
+            if (sessionResult.success && sessionResult.session?.user) {
+                console.log('✅ Session active trouvée:', sessionResult.session.user.email);
+                if (!this.currentUser) {
+                    console.log('🔄 Chargement profil depuis session active');
+                    await this.loadUserProfile(sessionResult.session.user);
+                }
+            } else {
+                console.log('⚠️ Aucune session active trouvée');
+            }
+        } catch (error) {
+            console.error('❌ Erreur vérification session:', error);
+        }
+    }
+
     // ========== INSCRIPTION ==========
     async signUp(formData) {
         try {
@@ -352,22 +372,36 @@ export class AuthManager {
 
     // ========== GESTION ÉVÉNEMENTS AUTH ==========
     handleAuthStateChange(event, session) {
-        console.log('🔄 Auth state change:', event);
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'no_user');
         
         switch (event) {
             case 'SIGNED_IN':
                 if (session?.user && !this.currentUser) {
+                    console.log('🔄 Chargement profil depuis SIGNED_IN:', session.user.email);
                     this.loadUserProfile(session.user);
                 }
                 break;
                 
+            case 'INITIAL_SESSION':
+                console.log('🔄 INITIAL_SESSION détecté, vérification session active...');
+                this.checkAndLoadActiveSession();
+                break;
+                
             case 'SIGNED_OUT':
+                console.log('🔄 SIGNED_OUT détecté');
                 this.currentUser = null;
                 this.notifyAuthListeners('SIGNED_OUT', null);
                 break;
                 
             case 'TOKEN_REFRESHED':
-                console.log('🔄 Token refreshed');
+                if (session?.user && this.currentUser) {
+                    console.log('🔄 Token refreshed pour:', session.user.email);
+                    this.currentUser.session = session;
+                    this.notifyAuthListeners('TOKEN_REFRESHED', this.currentUser);
+                } else if (session?.user && !this.currentUser) {
+                    console.log('🔄 Chargement profil depuis TOKEN_REFRESHED');
+                    this.loadUserProfile(session.user);
+                }
                 break;
         }
     }

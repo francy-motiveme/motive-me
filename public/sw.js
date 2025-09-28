@@ -1,7 +1,7 @@
 // Service Worker MotiveMe - PWA Support et Cache Intelligent
-const CACHE_NAME = 'motiveme-v1.0.0';
-const STATIC_CACHE_NAME = 'motiveme-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'motiveme-dynamic-v1.0.0';
+const CACHE_NAME = 'motiveme-v1.0.1-debug';
+const STATIC_CACHE_NAME = 'motiveme-static-v1.0.1-debug';
+const DYNAMIC_CACHE_NAME = 'motiveme-dynamic-v1.0.1-debug';
 
 // Fichiers à mettre en cache pour le fonctionnement offline
 const STATIC_FILES = [

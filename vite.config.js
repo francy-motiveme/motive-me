@@ -10,9 +10,12 @@ export default defineConfig({
       host: 'localhost'
     },
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
       'Pragma': 'no-cache',
-      'Expires': '0'
+      'Expires': '0',
+      'Surrogate-Control': 'no-store',
+      'ETag': false,
+      'Last-Modified': false
     },
     // Configuration critique pour Replit - accepter TOUS les hosts
     allowedHosts: true,

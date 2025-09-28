@@ -214,23 +214,29 @@ class MotiveMeApp {
 
     // ========== GESTION CHANGEMENTS AUTH ==========
     handleAuthChange(event, user) {
-        console.log('🔄 Auth change:', event, user?.email);
+        console.log('🔄 Auth change dans app:', event, user?.email);
 
         switch (event) {
             case 'SIGNED_IN':
+            case 'INITIAL_SESSION':
+                console.log('🔄 Traitement connexion utilisateur:', user?.name);
                 this.currentUser = user;
-                showScreen('dashboardScreen');
                 this.updateUserInfo();
                 this.loadDashboard();
+                console.log('🔄 Changement vers dashboard...');
+                showScreen('dashboardScreen');
                 break;
 
             case 'SIGNED_OUT':
+                console.log('🔄 Déconnexion utilisateur');
                 this.currentUser = null;
                 showScreen('loginScreen');
                 this.clearUserInfo();
                 break;
 
             case 'USER_UPDATED':
+            case 'TOKEN_REFRESHED':
+                console.log('🔄 Mise à jour utilisateur:', user?.name);
                 this.currentUser = user;
                 this.updateUserInfo();
                 break;
