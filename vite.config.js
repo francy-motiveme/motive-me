@@ -30,8 +30,8 @@ export default defineConfig({
   },
   define: {
     'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || 'https://lcbvjrukxjnenzficeci.supabase.co'),
-    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
+    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjYnZqcnVreGpuZW56ZmljZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5OTM0NjIsImV4cCI6MjA1MTU2OTQ2Mn0.FbZ1zDUyOmOJg9oN7bqy7Y8W7VU9l7J2mF5P9X8j3QE'),
     'process.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
-    'process.env.SESSION_SECRET': JSON.stringify(process.env.SESSION_SECRET || '')
+    'process.env.SESSION_SECRET': JSON.stringify(process.env.SESSION_SECRET || 'motiveMe2025SecretKey')
   }
 });
