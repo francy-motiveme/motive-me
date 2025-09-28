@@ -7,7 +7,7 @@ channel = "stable-25_05"
 packages = ["tree"]
 
 [workflows]
-runButton = "Start MotiveMe"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -22,13 +22,13 @@ args = "MotiveMe"
 name = "MotiveMe"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow]]
 name = "Start MotiveMe"
@@ -59,6 +59,10 @@ args = "npm run dev"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 35701
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"

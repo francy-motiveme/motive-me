@@ -29,11 +29,9 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env': {
-      SUPABASE_URL: JSON.stringify(process.env.SUPABASE_URL || 'https://lcbvjrukxjnenzficeci.supabase.co'),
-      SUPABASE_ANON_KEY: JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
-      SUPABASE_SERVICE_ROLE_KEY: JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
-      SESSION_SECRET: JSON.stringify(process.env.SESSION_SECRET || '')
-    }
+    'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || 'https://lcbvjrukxjnenzficeci.supabase.co'),
+    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
+    'process.env.SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
+    'process.env.SESSION_SECRET': JSON.stringify(process.env.SESSION_SECRET || '')
   }
 });
