@@ -498,3 +498,151 @@ Après exécution complète, générer rapport avec:
 - 🚀 Checklist déploiement production
 
 **OBJECTIF:** Application MotiveMe 100% fonctionnelle, sécurisée, performante et prête production.
+
+## 🧪 BOUTON TEST - ACCÈS DIRECT APPLICATION
+
+### Ajout du Bouton Test dans l'Interface
+
+Pour permettre l'accès à l'application sans inscription (fonctionnalité encore en développement), ajouter le bouton de test suivant dans le fichier `index.html` :
+
+```html
+<!-- Bouton de test pour accès direct - À ajouter après le formulaire de connexion -->
+<div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+    <button onclick="loginAsTestUser()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+        🧪 Mode Test - Accès Direct
+    </button>
+    <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">
+        Tester l'app sans inscription
+    </p>
+</div>
+```
+
+### Fonction JavaScript pour le Mode Test
+
+Ajouter la fonction `loginAsTestUser()` dans le fichier `js/app.js` :
+
+```javascript
+// Fonction de connexion en mode test - À ajouter dans la classe MotiveMeApp
+async loginAsTestUser() {
+    try {
+        console.log('🧪 Mode test activé - Connexion utilisateur test...');
+        
+        // Simuler un utilisateur test
+        const testUser = {
+            id: 'test-user-001',
+            email: 'test@motiveme.app',
+            name: 'Utilisateur Test',
+            points: 150,
+            level: 2,
+            badges: [
+                { id: 'first_challenge', name: 'Premier Challenge', icon: '🎯', earnedAt: new Date().toISOString() },
+                { id: 'week_streak', name: 'Série Hebdo', icon: '🔥', earnedAt: new Date().toISOString() }
+            ],
+            preferences: {
+                notifications: true,
+                email_reminders: true,
+                theme: 'light'
+            },
+            stats: {
+                challenges_created: 3,
+                challenges_completed: 1,
+                total_checkins: 12,
+                current_streak: 5,
+                longest_streak: 8
+            },
+            isAuthenticated: true,
+            lastLogin: new Date().toISOString()
+        };
+
+        // Simuler des challenges de test
+        const testChallenges = [
+            {
+                id: 'test-challenge-1',
+                title: 'Lire 30 min par jour',
+                duration: 7,
+                frequency: 'daily',
+                status: 'active',
+                witness_email: 'temoin@test.com',
+                gage: 'Donner 20€ à une association',
+                completion_rate: 71,
+                occurrences: [
+                    { date: new Date().toISOString(), checked: true, required: true },
+                    { date: new Date(Date.now() - 86400000).toISOString(), checked: true, required: true },
+                    { date: new Date(Date.now() - 172800000).toISOString(), checked: false, required: true }
+                ]
+            },
+            {
+                id: 'test-challenge-2',
+                title: 'Exercice physique',
+                duration: 14,
+                frequency: 'custom',
+                status: 'active',
+                witness_email: 'coach@test.com',
+                gage: 'Faire 50 pompes',
+                completion_rate: 85,
+                occurrences: [
+                    { date: new Date().toISOString(), checked: false, required: true },
+                    { date: new Date(Date.now() - 86400000).toISOString(), checked: true, required: true }
+                ]
+            }
+        ];
+
+        // Mettre à jour l'état de l'application
+        this.currentUser = testUser;
+        authManager.currentUser = testUser;
+        
+        // Simuler des données de challenges
+        challengeManager.testChallenges = testChallenges;
+        
+        // Afficher une notification de mode test
+        showNotification('🧪 Mode Test activé ! Données de démonstration chargées', 'info');
+        
+        // Mettre à jour l'interface utilisateur
+        this.updateUserInfo();
+        
+        // Charger le dashboard avec les données de test
+        this.renderChallengesList(testChallenges);
+        this.updateStats(testChallenges);
+        
+        // Afficher le dashboard
+        showScreen('dashboardScreen');
+        
+        console.log('✅ Mode test configuré avec succès');
+        
+        return { success: true, message: 'Mode test activé', user: testUser };
+        
+    } catch (error) {
+        console.error('❌ Erreur mode test:', error);
+        showNotification('Erreur lors de l\'activation du mode test', 'error');
+        return { success: false, error: error.message };
+    }
+}
+```
+
+### Exposition de la Fonction Globalement
+
+Dans la méthode `initializeUI()` de `js/app.js`, ajouter :
+
+```javascript
+// Exposer la fonction de test globalement
+window.loginAsTestUser = () => this.loginAsTestUser();
+```
+
+### Fonctionnalités du Mode Test
+
+Le bouton de test permet de :
+
+✅ **Accès immédiat** : Connexion directe sans inscription  
+✅ **Données de démonstration** : Utilisateur avec historique  
+✅ **Challenges préchargés** : 2 challenges avec check-ins  
+✅ **Badges débloqués** : Badges de test pour démonstration  
+✅ **Statistiques réalistes** : Données cohérentes pour test UX  
+✅ **Toutes fonctionnalités** : Accès complet dashboard et features
+
+### Placement Recommandé
+
+Le bouton doit être placé dans l'écran de connexion (`#loginScreen`) après le formulaire de connexion et avant le lien d'inscription, pour une visibilité optimale.
+
+### Sécurité Mode Test
+
+⚠️ **Important** : Ce mode test est destiné uniquement au développement et aux démonstrations. En production, s'assurer que cette fonctionnalité soit désactivée ou protégée par authentification administrateur.
