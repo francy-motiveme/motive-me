@@ -22,6 +22,18 @@ export class AuthManager {
         if (this.isInitialized) return;
 
         try {
+            // Connecter à la base de données
+            try {
+                const dbConnection = await database.connect();
+                if (!dbConnection.success && !dbConnection.fallback) {
+                    console.warn('⚠️ Connexion base de données échouée, mode dégradé');
+                } else {
+                    console.log('✅ Database connection établie:', dbConnection.message);
+                }
+            } catch (error) {
+                console.warn('⚠️ Erreur connexion database:', error.message);
+            }
+
             const sessionResult = await database.getCurrentSession();
 
             if (sessionResult.success && sessionResult.session?.user) {

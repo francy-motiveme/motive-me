@@ -108,6 +108,23 @@ args = "node scripts/check-database.js"
 task = "shell.exec"
 args = "echo \"✅ CORRECTION SUPABASE TERMINÉE\""
 
+[[workflows.workflow]]
+name = "Fix All Errors"
+author = 48125245
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/fix-all-errors.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/check-database.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🎯 RÉPARATION TERMINÉE - Redémarrez l'application\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80

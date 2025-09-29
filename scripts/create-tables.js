@@ -146,31 +146,67 @@ CREATE TRIGGER update_challenges_updated_at
 
 async function createTables() {
     try {
-        // Exécuter le SQL directement
-        const { data, error } = await supabase.rpc('exec_sql', {
-            sql_query: createTablesSQL
-        });
+        // Créer les tables une par une avec requêtes SQL directes
+        const tableQueries = [
+            `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`,
+            
+            `CREATE TABLE IF NOT EXISTS public.users (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                email VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                points INTEGER DEFAULT 0,
+                level INTEGER DEFAULT 1,
+                badges JSONB DEFAULT '[]'::jsonb,
+                preferences JSONB DEFAULT '{}'::jsonb,
+                stats JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );`,
+            
+            `CREATE TABLE IF NOT EXISTS public.challenges (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                frequency VARCHAR(50) DEFAULT 'daily',
+                custom_days INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+                duration INTEGER NOT NULL DEFAULT 30,
+                witness_email VARCHAR(255),
+                gage TEXT,
+                reminder_time TIME DEFAULT '20:00:00',
+                status VARCHAR(50) DEFAULT 'active',
+                start_date DATE DEFAULT CURRENT_DATE,
+                end_date DATE,
+                points_reward INTEGER DEFAULT 10,
+                metadata JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );`,
+            
+            `CREATE TABLE IF NOT EXISTS public.check_ins (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+                challenge_id INTEGER NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
+                check_in_date DATE NOT NULL DEFAULT CURRENT_DATE,
+                completed BOOLEAN DEFAULT FALSE,
+                proof_url VARCHAR(500),
+                notes TEXT,
+                points_earned INTEGER DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );`
+        ];
 
-        if (error) {
-            console.error('❌ Erreur SQL:', error.message);
-            
-            // Fallback: exécuter table par table
-            const tables = createTablesSQL.split(';').filter(sql => sql.trim().length > 0);
-            
-            for (const tableSql of tables) {
-                if (tableSql.trim()) {
-                    try {
-                        const { error: tableError } = await supabase.rpc('exec_sql', {
-                            sql_query: tableSql.trim() + ';'
-                        });
-                        
-                        if (tableError) {
-                            console.warn('⚠️ Erreur table:', tableError.message);
-                        }
-                    } catch (err) {
-                        console.warn('⚠️ Erreur exécution table:', err.message);
-                    }
+        for (const query of tableQueries) {
+            try {
+                const { data, error } = await supabase.rpc('query', { query_text: query });
+                
+                if (error) {
+                    console.warn('⚠️ Erreur table:', error.message);
+                } else {
+                    console.log('✅ Requête exécutée');
                 }
+            } catch (err) {
+                console.warn('⚠️ Erreur:', err.message);
             }
         }
 

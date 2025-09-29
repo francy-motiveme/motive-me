@@ -2,11 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuration sécurisée avec variables d'environnement
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://lcbvjrukxjnenzficeci.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjYnZqcnVreGpuZW56ZmljZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5OTM0NjIsImV4cCI6MjA1MTU2OTQ2Mn0.FbZ1zDUyOmOJg9oN7bqy7Y8W7VU9l7J2mF5P9X8j3QE';
+const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://eiaxdfkkfhkixnuckkma.supabase.co';
+const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpYXhkZmtraGhraXhudWNra21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDA1MDMsImV4cCI6MjA1MTY3NjUwM30.4U-PmBEeCjMJ6s74T3WJb0oCWNE-8lUE6fJ6JQpnrco';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Variables d\'environnement Supabase manquantes');
+    console.log('URL:', supabaseUrl);
+    console.log('Key available:', !!supabaseAnonKey);
 }
 
 // Initialiser Supabase avec configuration sécurisée
@@ -14,14 +16,22 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: false,
+        storageKey: 'motiveme-auth'
     },
     realtime: {
         params: {
             eventsPerSecond: 10
         }
+    },
+    global: {
+        headers: {
+            'X-Client-Info': 'motiveme-web'
+        }
     }
 });
+
+console.log('✅ Supabase client initialized:', !!supabase);
 
 // Classe Database pour gérer toutes les interactions
 class Database {
@@ -41,40 +51,12 @@ class Database {
         }
 
         try {
-            // Récupérer les variables d'environnement avec fallbacks
-            const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 
-                               window.ENV?.SUPABASE_URL ||
-                               'https://eiaxdfkkfhkixnuckkma.supabase.co';
-
-            const supabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 
-                               window.ENV?.SUPABASE_ANON_KEY;
-
-            if (!supabaseUrl || !supabaseKey) {
-                console.warn('⚠️ Configuration Supabase incomplète, mode dégradé activé');
-                return this.activateFallbackMode();
-            }
-
-            // Créer le client Supabase
-            this.client = createClient(supabaseUrl, supabaseKey, {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: false,
-                    storageKey: 'motiveme-auth'
-                },
-                global: {
-                    headers: {
-                        'X-Client-Info': 'motiveme-web'
-                    }
-                },
-                db: {
-                    schema: 'public'
-                }
-            });
+            // Utiliser le client global déjà initialisé
+            this.client = supabase;
 
             // Test de connexion simple
             const { data, error } = await Promise.race([
-                this.client.from('users').select('count'),
+                this.client.from('users').select('id').limit(1),
                 new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Timeout')), this.connectionTimeout)
                 )
@@ -541,6 +523,16 @@ class Database {
 
 // Instance singleton
 const database = new Database();
+
+// Auto-initialisation
+(async () => {
+    try {
+        await database.connect();
+        console.log('🚀 Database auto-connectée');
+    } catch (error) {
+        console.warn('⚠️ Auto-connexion database échouée:', error.message);
+    }
+})();
 
 export default database;
 export { Database, supabase };
