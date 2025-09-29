@@ -2,13 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuration sécurisée avec variables d'environnement
-const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://eiaxdfkkfhkixnuckkma.supabase.co';
-const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpYXhkZmtraGhraXhudWNra21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDA1MDMsImV4cCI6MjA1MTY3NjUwM30.4U-PmBEeCjMJ6s74T3WJb0oCWNE-8lUE6fJ6JQpnrco';
+const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Variables d\'environnement Supabase manquantes');
-    console.log('URL:', supabaseUrl);
-    console.log('Key available:', !!supabaseAnonKey);
+    console.error('Veuillez configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans les secrets Replit');
+    throw new Error('Configuration Supabase manquante');
 }
 
 // Initialiser Supabase avec configuration sécurisée

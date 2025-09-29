@@ -393,8 +393,6 @@ class MotiveMeApp {
         }
 
         console.log(`📱 Onglet ${tabName} activé`);
-
-        this.activeTab = tabName;
     }
 
     // ========== CRÉATION CHALLENGE ==========
