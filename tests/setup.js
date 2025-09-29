@@ -1,15 +1,22 @@
 // Configuration des tests Jest
 import '@testing-library/jest-dom';
 
-// Mock de l'environnement Replit
-global.process = {
+// Mock import.meta for Vite compatibility
+const importMetaMock = {
   env: {
-    SUPABASE_URL: 'https://test.supabase.co',
-    SUPABASE_ANON_KEY: 'test-key',
-    SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
-    SESSION_SECRET: 'test-secret'
+    VITE_SUPABASE_URL: 'https://test.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'test-anon-key-for-jest'
   }
 };
+
+// Inject into global scope
+global.import = {
+  meta: importMetaMock
+};
+
+// Mock de l'environnement
+process.env.VITE_SUPABASE_URL = 'https://test.supabase.co';
+process.env.VITE_SUPABASE_ANON_KEY = 'test-anon-key-for-jest';
 
 // Mock des APIs du navigateur
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
@@ -19,6 +26,7 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Mock de l'API de géolocalisation
+global.navigator = global.navigator || {};
 global.navigator.geolocation = {
   getCurrentPosition: jest.fn(),
   watchPosition: jest.fn()
