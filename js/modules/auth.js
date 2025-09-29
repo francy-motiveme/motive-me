@@ -46,12 +46,19 @@ export class AuthManager {
                 if (!this.currentUser) {
                     console.log('🔄 Chargement profil depuis session active');
                     await this.loadUserProfile(sessionResult.session.user);
+                } else {
+                    // Notifier que l'utilisateur est déjà connecté
+                    this.notifyAuthListeners('INITIAL_SESSION', this.currentUser);
                 }
             } else {
                 console.log('⚠️ Aucune session active trouvée');
+                // CORRECTION CRITIQUE: Notifier qu'aucune session n'est active
+                this.notifyAuthListeners('NO_SESSION', null);
             }
         } catch (error) {
             console.error('❌ Erreur vérification session:', error);
+            // Notifier l'erreur aussi
+            this.notifyAuthListeners('NO_SESSION', null);
         }
     }
 

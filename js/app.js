@@ -228,7 +228,8 @@ class MotiveMeApp {
                 break;
 
             case 'SIGNED_OUT':
-                console.log('🔄 Déconnexion utilisateur');
+            case 'NO_SESSION':
+                console.log('🔄 Déconnexion utilisateur ou aucune session');
                 this.currentUser = null;
                 showScreen('loginScreen');
                 this.clearUserInfo();
