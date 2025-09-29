@@ -185,7 +185,8 @@ CREATE POLICY "Users can view their own profile"
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
 CREATE POLICY "Users can update their own profile"
     ON public.users FOR UPDATE
-    USING (auth.uid() = id);
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.users;
 CREATE POLICY "Users can insert their own profile"
@@ -222,23 +223,57 @@ CREATE POLICY "Users can view their own check-ins"
 DROP POLICY IF EXISTS "Users can create their own check-ins" ON public.check_ins;
 CREATE POLICY "Users can create their own check-ins"
     ON public.check_ins FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    );
 
 DROP POLICY IF EXISTS "Users can update their own check-ins" ON public.check_ins;
 CREATE POLICY "Users can update their own check-ins"
     ON public.check_ins FOR UPDATE
-    USING (auth.uid() = user_id);
+    USING (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    );
 
 DROP POLICY IF EXISTS "Users can delete their own check-ins" ON public.check_ins;
 CREATE POLICY "Users can delete their own check-ins"
     ON public.check_ins FOR DELETE
-    USING (auth.uid() = user_id);
+    USING (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    );
 
 -- Politiques pour NOTIFICATIONS
 DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
 CREATE POLICY "Users can view their own notifications"
     ON public.notifications FOR SELECT
     USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own notifications" ON public.notifications;
+CREATE POLICY "Users can create their own notifications"
+    ON public.notifications FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
 CREATE POLICY "Users can update their own notifications"
@@ -252,7 +287,7 @@ CREATE POLICY "Users can view witness interactions for their challenges"
     USING (
         EXISTS (
             SELECT 1 FROM public.challenges
-            WHERE challenges.id = witness_interactions.challenge_id
+            WHERE challenges.id = challenge_id
             AND challenges.user_id = auth.uid()
         )
     );
@@ -263,7 +298,7 @@ CREATE POLICY "Users can insert witness interactions for their challenges"
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.challenges
-            WHERE challenges.id = witness_interactions.challenge_id
+            WHERE challenges.id = challenge_id
             AND challenges.user_id = auth.uid()
         )
     );
@@ -288,12 +323,26 @@ CREATE POLICY "Users can view their own file uploads"
 DROP POLICY IF EXISTS "Users can create their own file uploads" ON public.file_uploads;
 CREATE POLICY "Users can create their own file uploads"
     ON public.file_uploads FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    );
 
 DROP POLICY IF EXISTS "Users can delete their own file uploads" ON public.file_uploads;
 CREATE POLICY "Users can delete their own file uploads"
     ON public.file_uploads FOR DELETE
-    USING (auth.uid() = user_id);
+    USING (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.challenges
+            WHERE challenges.id = challenge_id
+            AND challenges.user_id = auth.uid()
+        )
+    );
 
 -- ============================================================================
 -- FIN DU SCRIPT
