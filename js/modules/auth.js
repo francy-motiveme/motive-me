@@ -180,6 +180,23 @@ export class AuthManager {
             const signInResult = await database.signIn(validEmail, password);
 
             if (!signInResult.success) {
+                // Gestion spéciale email_not_confirmed
+                if (signInResult.error && signInResult.error.message && 
+                    signInResult.error.message.includes('email_not_confirmed')) {
+                    
+                    console.log('⚠️ Email non confirmé pour:', validEmail);
+                    
+                    // Proposer options à l'utilisateur
+                    this.showEmailConfirmationOptions(validEmail);
+                    
+                    return { 
+                        success: false, 
+                        error: 'Email non confirmé. Vérifie ta boîte mail ou renvoie l\'email de confirmation.',
+                        requiresConfirmation: true,
+                        email: validEmail
+                    };
+                }
+
                 // Incrémenter compteur tentatives échouées
                 const attempts = this.loginAttempts.get(validEmail) || 0;
                 this.loginAttempts.set(validEmail, attempts + 1);
@@ -303,10 +320,56 @@ export class AuthManager {
                 
                 this.notifyAuthListeners('SIGNED_IN', this.currentUser);
                 console.log('✅ Profil basique créé pour:', authUser.email);
+            } else {
+                // Mode dégradé si création profil échoue
+                console.warn('⚠️ Mode dégradé activé - Profil temporaire');
+                this.activateDegradedMode(authUser);
             }
             
         } catch (error) {
             console.error('❌ Erreur création profil basique:', error);
+            // Mode dégradé en cas d'erreur
+            this.activateDegradedMode(authUser);
+        }
+    }
+
+    // ========== MODE DÉGRADÉ ==========
+    activateDegradedMode(authUser) {
+        try {
+            // Créer utilisateur temporaire en mémoire uniquement
+            this.currentUser = {
+                id: authUser.id,
+                email: authUser.email,
+                name: authUser.user_metadata?.full_name || 'Utilisateur',
+                points: 0,
+                level: 1,
+                badges: [],
+                preferences: {
+                    notifications: true,
+                    email_reminders: true,
+                    theme: 'light'
+                },
+                stats: {
+                    challenges_created: 0,
+                    challenges_completed: 0,
+                    total_checkins: 0,
+                    current_streak: 0,
+                    longest_streak: 0
+                },
+                isAuthenticated: true,
+                isDegradedMode: true,
+                lastLogin: new Date().toISOString()
+            };
+
+            this.notifyAuthListeners('SIGNED_IN', this.currentUser);
+            
+            // Notification mode dégradé
+            showNotification('⚠️ Mode limité activé. Certaines fonctionnalités peuvent être restreintes.', 'warning');
+            
+            console.log('✅ Mode dégradé activé pour:', authUser.email);
+            
+        } catch (error) {
+            console.error('❌ Erreur activation mode dégradé:', error);
         }
     }
 
@@ -383,15 +446,15 @@ export class AuthManager {
         
         switch (event) {
             case 'SIGNED_IN':
+            case 'INITIAL_SESSION':  // CORRECTION CRITIQUE: Traiter INITIAL_SESSION comme SIGNED_IN
                 if (session?.user && !this.currentUser) {
-                    console.log('🔄 Chargement profil depuis SIGNED_IN:', session.user.email);
+                    console.log('🔄 Chargement profil depuis événement:', event, session.user.email);
                     this.loadUserProfile(session.user);
+                } else if (session?.user && this.currentUser) {
+                    // Utilisateur déjà chargé, just refresh session
+                    this.currentUser.session = session;
+                    this.notifyAuthListeners('USER_UPDATED', this.currentUser);
                 }
-                break;
-                
-            case 'INITIAL_SESSION':
-                console.log('🔄 INITIAL_SESSION détecté, vérification session active...');
-                this.checkAndLoadActiveSession();
                 break;
                 
             case 'SIGNED_OUT':
@@ -476,6 +539,92 @@ export class AuthManager {
             }
         } catch (error) {
             console.error('❌ Erreur vérification badges:', error);
+        }
+    }
+
+    // ========== GESTION EMAIL CONFIRMATION ==========
+    showEmailConfirmationOptions(email) {
+        try {
+            // Créer interface de confirmation
+            const confirmationDiv = document.createElement('div');
+            confirmationDiv.className = 'email-confirmation-prompt';
+            confirmationDiv.innerHTML = `
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%); 
+                           padding: 15px; border-radius: 10px; margin: 15px 0; 
+                           border-left: 4px solid #f59e0b;">
+                    <h4 style="margin: 0 0 10px 0; color: #92400e;">📧 Email non confirmé</h4>
+                    <p style="margin: 0 0 15px 0; color: #92400e; font-size: 14px;">
+                        Vérifie ta boîte mail et clique sur le lien de confirmation.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="authManager.resendConfirmation('${email}')" 
+                                style="background: #f59e0b; color: white; border: none; 
+                                       padding: 8px 15px; border-radius: 6px; cursor: pointer;
+                                       font-size: 13px; font-weight: 600;">
+                            📤 Renvoyer l'email
+                        </button>
+                        <button onclick="authManager.hideEmailConfirmationPrompt()" 
+                                style="background: #6b7280; color: white; border: none; 
+                                       padding: 8px 15px; border-radius: 6px; cursor: pointer;
+                                       font-size: 13px; font-weight: 600;">
+                            ✕ Fermer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter à l'écran de connexion
+            const loginScreen = document.getElementById('loginScreen');
+            
+            // Supprimer ancien prompt s'il existe
+            const existingPrompt = loginScreen.querySelector('.email-confirmation-prompt');
+            if (existingPrompt) {
+                existingPrompt.remove();
+            }
+            
+            // Ajouter après le formulaire
+            const loginForm = loginScreen.querySelector('.login-form') || loginScreen;
+            loginForm.appendChild(confirmationDiv);
+            
+            console.log('✅ Prompt confirmation email affiché');
+            
+        } catch (error) {
+            console.error('❌ Erreur affichage prompt confirmation:', error);
+        }
+    }
+
+    async resendConfirmation(email) {
+        try {
+            console.log('📤 Renvoi email confirmation pour:', email);
+            
+            const { error } = await database.client.auth.resend({
+                type: 'signup',
+                email: email
+            });
+            
+            if (!error) {
+                showNotification('📧 Email de confirmation renvoyé ! Vérifie ta boîte mail.', 'success');
+                console.log('✅ Email confirmation renvoyé avec succès');
+            } else {
+                console.error('❌ Erreur renvoi email:', error);
+                showNotification('Erreur lors du renvoi de l\'email. Réessaie plus tard.', 'error');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur renvoi confirmation:', error);
+            showNotification('Erreur technique. Réessaie plus tard.', 'error');
+        }
+    }
+
+    hideEmailConfirmationPrompt() {
+        try {
+            const prompt = document.querySelector('.email-confirmation-prompt');
+            if (prompt) {
+                prompt.remove();
+                console.log('✅ Prompt confirmation fermé');
+            }
+        } catch (error) {
+            console.error('❌ Erreur fermeture prompt:', error);
         }
     }
 
