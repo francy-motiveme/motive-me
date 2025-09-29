@@ -524,4 +524,16 @@ if (typeof window !== 'undefined') {
     window.uiManager = uiManager;
 }
 
+// Fonctions globales manquantes
+window.showScreen = function(screenName) {
+    uiManager.showScreen(screenName);
+};
+
+window.loadDashboard = function() {
+    if (window.challengeManager && window.challengeManager.loadUserChallenges) {
+        return window.challengeManager.loadUserChallenges();
+    }
+    console.warn('⚠️ loadDashboard: challengeManager non disponible');
+};
+
 export default uiManager;
