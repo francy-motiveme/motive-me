@@ -56,6 +56,24 @@ args = "npm install"
 task = "shell.exec"
 args = "npm run dev"
 
+[[workflows.workflow]]
+name = "Init Database"
+author = 48125245
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/init-database.js"
+
+[[workflows.workflow]]
+name = "Check Database"
+author = 48125245
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/check-database.js"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
