@@ -84,3 +84,28 @@ The application uses environment variables managed through Replit Secrets:
 - `SESSION_SECRET`: Encryption key for session security
 
 The build system (Vite) handles environment variable injection and provides hot module replacement for development, with production optimization including code splitting and asset optimization.
+
+## Replit Environment Setup
+
+### Date: September 29, 2025
+
+**Setup completed for Replit environment:**
+
+1. **Dependencies Installed**: All npm packages installed via `npm install`
+2. **Build System**: Vite configured for Replit with:
+   - Host: `0.0.0.0` (accepts all connections)
+   - Port: `5000` (frontend server)
+   - `allowedHosts: true` (required for Replit's proxy/iframe)
+   - Cache headers disabled for development
+3. **Workflow**: Development server configured to run `npm run dev` (Vite)
+4. **Deployment**: Configured for autoscale deployment:
+   - Build: `npm run build`
+   - Run: `npm run preview`
+5. **.gitignore**: Added comprehensive Node.js patterns
+
+**Current State:**
+- Application running successfully on port 5000
+- Login screen displaying correctly
+- Service Worker registered
+- PWA features active
+- Supabase connection configured with fallback credentials in vite.config.js
