@@ -543,6 +543,34 @@ export class ChallengeManager {
         }
     }
 
+    // ========== DASHBOARD LOADING ==========
+    async loadDashboard() {
+        try {
+            const session = await database.getCurrentSession();
+            if (!session.success || !session.session) {
+                console.warn('⚠️ Pas de session pour charger le dashboard');
+                return { success: false, error: 'Non connecté' };
+            }
+
+            const userId = session.session.user.id;
+            const result = await this.loadUserChallenges(userId);
+            
+            if (result.success) {
+                console.log('✅ Dashboard chargé:', result.data.length, 'challenges');
+                
+                // Mettre à jour l'UI si disponible
+                if (window.uiManager && window.uiManager.updateDashboard) {
+                    window.uiManager.updateDashboard(result.data);
+                }
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('❌ Erreur loadDashboard:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // ========== GETTERS ==========
     getAllChallenges() {
         return this.challenges;

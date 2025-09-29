@@ -206,7 +206,7 @@ class Database {
     async createCheckIn(checkInData) {
         try {
             const { data, error } = await this.client
-                .from('checkins')
+                .from('check_ins')
                 .insert([checkInData])
                 .select()
                 .single();
@@ -222,7 +222,7 @@ class Database {
     async getCheckInsByChallenge(challengeId) {
         try {
             const { data, error } = await this.client
-                .from('checkins')
+                .from('check_ins')
                 .select('*')
                 .eq('challenge_id', challengeId)
                 .order('checked_at', { ascending: false });

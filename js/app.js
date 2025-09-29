@@ -26,7 +26,7 @@ class MotiveMeApp {
 
             // Initialiser les managers
             await authManager.initialize();
-            
+
             // Écouter les changements d'authentification
             authManager.addAuthListener((event, user) => {
                 this.handleAuthChange(event, user);
@@ -34,7 +34,7 @@ class MotiveMeApp {
 
             // Initialiser l'interface
             this.initializeUI();
-            
+
             // Vérifier si utilisateur déjà connecté
             const currentUser = authManager.getCurrentUser();
             if (currentUser) {
@@ -68,7 +68,7 @@ class MotiveMeApp {
         window.login = () => this.login();
         window.signup = () => this.signup();
         window.logout = () => this.logout();
-        
+
         // Exposer les handlers de formulaires pour les onsubmit dans HTML
         window.handleLogin = (event) => {
             event.preventDefault();
@@ -124,7 +124,7 @@ class MotiveMeApp {
     showFieldValidation(input, validation) {
         const errorId = input.id + '-error';
         let errorEl = document.getElementById(errorId);
-        
+
         if (!errorEl) {
             errorEl = document.createElement('div');
             errorEl.id = errorId;
@@ -182,7 +182,7 @@ class MotiveMeApp {
             if (result.success) {
                 showNotification(result.message);
                 showScreen('loginScreen');
-                
+
                 // Pré-remplir l'email de connexion
                 document.getElementById('loginEmail').value = email;
             } else {
@@ -199,7 +199,7 @@ class MotiveMeApp {
     async logout() {
         try {
             const result = await authManager.signOut();
-            
+
             if (result.success) {
                 showNotification(result.message);
                 // Le changement d'écran sera géré par handleAuthChange
@@ -289,11 +289,11 @@ class MotiveMeApp {
         try {
             // Charger les challenges
             const result = await challengeManager.loadUserChallenges(this.currentUser.id);
-            
+
             if (result.success) {
                 this.renderChallengesList(result.data);
                 this.updateStats(result.data);
-                
+
                 // Mettre à jour le badge
                 const badge = document.getElementById('challengesBadge');
                 if (badge) {
@@ -325,7 +325,7 @@ class MotiveMeApp {
         challengesList.innerHTML = challenges.map(challenge => {
             const progress = this.calculateProgress(challenge);
             const statusClass = `status-${challenge.status}`;
-            
+
             return `
                 <div class="challenge-card" onclick="viewChallenge(${challenge.id})">
                     <div class="challenge-header">
@@ -345,7 +345,7 @@ class MotiveMeApp {
 
     updateStats(challenges) {
         const stats = challengeManager.getChallengeStats(challenges);
-        
+
         // Mettre à jour les statistiques
         const streakCount = document.getElementById('streakCount');
         const completionRate = document.getElementById('completionRate');
@@ -358,7 +358,7 @@ class MotiveMeApp {
 
     calculateProgress(challenge) {
         if (!challenge.occurrences) return 0;
-        
+
         const totalOccurrences = challenge.occurrences.length;
         const checkedOccurrences = challenge.occurrences.filter(o => o.checked).length;
         return totalOccurrences > 0 ? Math.round((checkedOccurrences / totalOccurrences) * 100) : 0;
@@ -367,12 +367,12 @@ class MotiveMeApp {
     // ========== GESTION ONGLETS ==========
     switchTab(tabName) {
         this.activeTab = tabName;
-        
+
         // Mettre à jour les onglets visuels
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        
+
         document.querySelector(`[onclick="switchTab('${tabName}')"]`)?.classList.add('active');
 
         // Afficher/masquer les contenus
@@ -391,7 +391,7 @@ class MotiveMeApp {
             // Charger aussi les badges récents
             this.loadRecentBadges();
         }
-        
+
         console.log(`📱 Onglet ${tabName} activé`);
 
         this.activeTab = tabName;
@@ -401,7 +401,7 @@ class MotiveMeApp {
     toggleDaysSelector() {
         const frequency = document.getElementById('challengeFrequency').value;
         const daysSelector = document.getElementById('daysSelector');
-        
+
         if (daysSelector) {
             daysSelector.style.display = frequency === 'custom' ? 'block' : 'none';
         }
@@ -409,7 +409,7 @@ class MotiveMeApp {
 
     toggleDay(element) {
         const day = parseInt(element.dataset.day);
-        
+
         if (element.classList.contains('selected')) {
             element.classList.remove('selected');
             this.selectedDays = this.selectedDays.filter(d => d !== day);
@@ -424,11 +424,11 @@ class MotiveMeApp {
         document.querySelectorAll('.gage-option').forEach(option => {
             option.classList.remove('selected');
         });
-        
+
         // Sélectionner le nouveau
         element.classList.add('selected');
         this.selectedGage = gage;
-        
+
         // Afficher/masquer le champ personnalisé
         const customGage = document.getElementById('customGage');
         if (customGage) {
@@ -467,7 +467,7 @@ class MotiveMeApp {
 
             if (result.success) {
                 showNotification(result.message);
-                
+
                 // Mettre à jour les points utilisateur
                 const pointsUpdate = await authManager.updateUserProfile({
                     points: this.currentUser.points + 10
@@ -475,7 +475,7 @@ class MotiveMeApp {
 
                 // Réinitialiser le formulaire
                 this.resetCreateChallengeForm();
-                
+
                 // Retourner au dashboard
                 showScreen('dashboardScreen');
                 this.loadDashboard();
@@ -499,16 +499,16 @@ class MotiveMeApp {
         // Réinitialiser les sélections
         this.selectedDays = [];
         this.selectedGage = null;
-        
+
         // Réinitialiser les éléments visuels
         document.querySelectorAll('.day-chip').forEach(chip => {
             chip.classList.remove('selected');
         });
-        
+
         document.querySelectorAll('.gage-option').forEach(option => {
             option.classList.remove('selected');
         });
-        
+
         // Réinitialiser les champs
         const form = document.getElementById('createChallengeScreen');
         if (form) {
@@ -525,7 +525,7 @@ class MotiveMeApp {
     viewChallenge(challengeId) {
         this.currentChallengeId = challengeId;
         const challenge = challengeManager.getChallengeById(challengeId);
-        
+
         if (!challenge) {
             showNotification('Challenge non trouvé', 'error');
             return;
@@ -582,7 +582,7 @@ class MotiveMeApp {
             const dateStr = this.formatDayLabel(day.date);
             const isChecked = day.occurrence?.checked || false;
             const isRequired = day.occurrence?.required || false;
-            
+
             let classes = 'day-box';
             if (isChecked) classes += ' checked';
             if (!isRequired) classes += ' not-required';
@@ -617,7 +617,7 @@ class MotiveMeApp {
             const checkedCount = challenge.occurrences?.filter(o => o.checked).length || 0;
             const totalCount = challenge.occurrences?.length || 0;
             const streak = challengeManager.calculateStreak(challenge);
-            
+
             statsEl.textContent = `${checkedCount} / ${totalCount} complétés • Série : ${streak} 🔥`;
         }
     }
@@ -661,7 +661,7 @@ class MotiveMeApp {
 
             if (result.success) {
                 showNotification(result.data.message);
-                
+
                 // Mettre à jour les points utilisateur
                 await authManager.updateUserProfile({
                     points: this.currentUser.points + result.data.pointsGained
@@ -689,7 +689,7 @@ class MotiveMeApp {
     // ========== GESTION ÉCRANS ==========
     showScreen(screenId) {
         uiManager.showScreen(screenId);
-        
+
         // Charger les données selon l'écran
         if (screenId === 'badgesScreen') {
             this.loadBadgesScreen();
@@ -704,7 +704,7 @@ class MotiveMeApp {
         try {
             const user = authManager.getCurrentUser();
             const badges = user.badges || [];
-            
+
             if (badges.length === 0) {
                 recentBadgesEl.innerHTML = `
                     <div class="no-badges" style="text-align: center; color: #6b7280; font-size: 14px; width: 100%; padding: 20px;">
@@ -735,14 +735,14 @@ class MotiveMeApp {
         const badgeCountEl = document.getElementById('badgeCount');
         const badgePointsEl = document.getElementById('badgePoints');
         const badgeCategoriesEl = document.getElementById('badgeCategories');
-        
+
         if (!authManager.isAuthenticated()) return;
 
         try {
             const user = authManager.getCurrentUser();
             const userBadges = user.badges || [];
             const stats = badgeManager.getUserBadgeStats(userBadges);
-            
+
             // Mettre à jour les statistiques
             if (badgeCountEl) badgeCountEl.textContent = userBadges.length;
             if (badgePointsEl) badgePointsEl.textContent = stats.totalPoints;
@@ -808,5 +808,37 @@ if (document.readyState === 'loading') {
 
 // Exposer l'app globalement pour debug
 window.motiveMeApp = app;
+
+// Fonction de déconnexion
+async function signOut() {
+    const result = await authManager.signOut();
+    if (result.success) {
+        console.log('✅ Déconnexion réussie');
+        uiManager.showScreen('loginScreen');
+    }
+}
+
+// Fonctions globales manquantes
+window.showScreen = function(screenName) {
+    if (window.uiManager) {
+        window.uiManager.showScreen(screenName);
+    } else {
+        console.error('❌ uiManager non initialisé');
+    }
+};
+
+window.loadDashboard = async function() {
+    if (window.challengeManager && window.challengeManager.loadDashboard) {
+        return await window.challengeManager.loadDashboard();
+    } else {
+        console.error('❌ challengeManager.loadDashboard non disponible');
+        return { success: false, error: 'Manager non initialisé' };
+    }
+};
+
+// Exposer les managers globalement
+window.authManager = authManager;
+window.challengeManager = challengeManager;
+window.uiManager = uiManager;
 
 export default app;
