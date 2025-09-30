@@ -35,9 +35,10 @@ The database interface is abstracted through a centralized `database.js` module 
 - `users`: User profiles and metadata
 - `challenges`: Challenge definitions and settings
 - `check_ins`: Daily progress entries with proof
-- `witnesses`: Challenge witness relationships
-- `badges`: User achievement tracking
 - `notifications`: System notifications
+- `witness_interactions`: Challenge witness relationships
+- `achievements`: User achievement tracking (badges)
+- `file_uploads`: File upload tracking
 
 **Client Storage**: LocalStorage for session persistence and offline capability through a Service Worker implementation.
 
@@ -74,13 +75,12 @@ The application is configured as a PWA with:
 
 ### Optional Services
 - **EmailJS**: Third-party email service for witness notifications (configured but optional)
-- **Social Auth Providers**: Google and GitHub OAuth (configured for future implementation)
 
 ### Environment Configuration
 The application uses environment variables managed through Replit Secrets:
 - `SUPABASE_URL`: Database connection endpoint
 - `SUPABASE_ANON_KEY`: Public API key for client-side operations
-- `SUPABASE_SERVICE_ROLE_KEY`: Admin API key for server-side operations
+- `SUPABASE_SERVICE_ROLE_KEY`: Admin API key for server-side operations (used for initial setup)
 - `SESSION_SECRET`: Encryption key for session security
 
 The build system (Vite) handles environment variable injection and provides hot module replacement for development, with production optimization including code splitting and asset optimization.
@@ -89,43 +89,92 @@ The build system (Vite) handles environment variable injection and provides hot 
 
 ### Latest Update: September 30, 2025
 
-**GitHub Import Successfully Configured for Replit:**
+**✅ GitHub Import Successfully Configured and Running:**
 
 1. **Dependencies**: All npm packages installed successfully (506 packages)
+   - Installed via `npm install`
+   - All dependencies from package.json resolved
+
 2. **Build System**: Vite configured for Replit environment:
    - Host: `0.0.0.0` (accepts all connections for Replit proxy)
    - Port: `5000` (frontend server)
    - `allowedHosts: true` (required for Replit's iframe proxy)
    - Cache-Control headers configured (no-cache for development)
    - Environment variable injection configured via `define` in vite.config.js
-3. **Workflow**: Development server running `npm run dev` (Vite with HMR)
-4. **Deployment**: Configured for autoscale deployment:
-   - Build: `npm run build`
-   - Run: `npm run preview`
-5. **Security**: 
-   - Removed hardcoded Supabase credentials from vite.config.js
-   - .gitignore properly configured for Node.js
-   - Environment variables properly mapped for runtime injection
+   - HMR (Hot Module Replacement) configured with WSS protocol
 
-**Current State:**
-- ✅ Application running successfully on port 5000
-- ✅ Login screen displaying correctly
-- ✅ Service Worker registered and active
-- ✅ PWA features enabled
-- ⚠️ **Requires Supabase configuration** - See next section
+3. **Workflow**: Development server running successfully:
+   - Command: `npm run dev` (Vite with HMR)
+   - Status: ✅ RUNNING on http://0.0.0.0:5000/
+   - Auto-restart configured
 
-### Required Configuration
+4. **Database**: Supabase fully configured and operational:
+   - ✅ All environment variables configured in Replit Secrets
+   - ✅ Database tables created and verified:
+     - `users` - User profiles
+     - `challenges` - Challenge definitions
+     - `check_ins` - Daily check-ins
+     - `notifications` - System notifications
+     - `witness_interactions` - Witness relationships
+     - `achievements` - Badges and achievements
+     - `file_uploads` - File tracking
+   - ✅ RLS (Row Level Security) policies active
+   - ✅ Triggers configured for auto-updates
+   - ✅ Indexes created for performance
 
-**Supabase Database Setup Required:**
+5. **Application Status**:
+   - ✅ Application running successfully on port 5000
+   - ✅ Login/signup screens displaying correctly
+   - ✅ Supabase client initialized
+   - ✅ Database connection established
+   - ✅ AuthManager initialized
+   - ✅ Service Worker registered and active
+   - ✅ PWA features enabled
+   - ✅ All managers (auth, challenges, badges, analytics, email) initialized
 
-The application requires two environment variables to be set in Replit Secrets:
-1. `SUPABASE_URL` - Your Supabase project URL
-2. `SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
+6. **Security**: 
+   - ✅ All Supabase credentials stored in Replit Secrets (not in code)
+   - ✅ .gitignore properly configured for Node.js
+   - ✅ Environment variables properly mapped for runtime injection
+   - ✅ RLS policies protecting all user data
 
-**Steps to complete setup:**
-1. Create a Supabase project at https://supabase.com
-2. Execute the SQL script from `supabase_init.sql` in the Supabase SQL Editor
-3. Add the two environment variables to Replit Secrets
-4. Restart the application
+### Current Configuration
 
-Detailed instructions are available in `INSTRUCTIONS_SUPABASE.md`
+**Environment Variables (Configured in Replit Secrets):**
+- `SUPABASE_URL` - ✅ Set
+- `SUPABASE_ANON_KEY` - ✅ Set
+- `SUPABASE_SERVICE_ROLE_KEY` - ✅ Set
+- `SESSION_SECRET` - ✅ Set
+
+**Deployment Configuration:**
+- Deployment target: Autoscale (configured via deploy_config_tool)
+- Build command: `npm run build` (Vite production build)
+- Run command: `vite preview` (production preview server)
+
+### Testing
+
+**Available Test Commands:**
+- `npm test` - Run all tests (unit + integration)
+- `npm run test:unit` - Run unit tests only
+- `npm run test:integration` - Run integration tests
+- `npm run test:e2e` - Run end-to-end tests with Playwright
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+
+### Known Issues / Notes
+
+**Minor Issues (non-critical):**
+- ⚠️ WebSocket connection for Vite HMR occasionally fails (doesn't affect app functionality, only hot reload)
+- ℹ️ Some DOM autocomplete warnings in browser console (UX improvement suggestions)
+
+**All critical functionality is working correctly.**
+
+## Recent Changes
+
+### 2025-09-30: Initial Replit Setup
+- Installed all npm dependencies
+- Configured Vite for Replit environment
+- Verified Supabase database tables exist
+- Configured and started development workflow
+- Confirmed all application modules initialize correctly
+- Application ready for testing and use
