@@ -7,7 +7,9 @@ export default defineConfig({
     strictPort: true,
     hmr: {
       port: 5000,
-      host: 'localhost'
+      host: '0.0.0.0',
+      clientPort: 443,
+      protocol: 'wss'
     },
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
@@ -32,10 +34,11 @@ export default defineConfig({
     }
   },
   define: {
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''),
-    'import.meta.env.VITE_EMAILJS_PUBLIC_KEY': JSON.stringify(process.env.EMAILJS_PUBLIC_KEY || process.env.VITE_EMAILJS_PUBLIC_KEY || ''),
-    'import.meta.env.VITE_EMAILJS_SERVICE_ID': JSON.stringify(process.env.EMAILJS_SERVICE_ID || process.env.VITE_EMAILJS_SERVICE_ID || ''),
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || ''),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || ''),
+    'import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY': JSON.stringify(process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
+    'import.meta.env.VITE_EMAILJS_PUBLIC_KEY': JSON.stringify(process.env.EMAILJS_PUBLIC_KEY || ''),
+    'import.meta.env.VITE_EMAILJS_SERVICE_ID': JSON.stringify(process.env.EMAILJS_SERVICE_ID || ''),
     global: 'globalThis'
   },
 });
