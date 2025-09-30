@@ -204,9 +204,9 @@ localPort = 44745
 externalPort = 3000
 
 [deployment]
-run = ["npm", "run", "preview"]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
+run = ["npm", "run", "preview"]
 
 [env]
 NODE_ENV = "production"

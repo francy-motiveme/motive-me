@@ -147,9 +147,11 @@ The build system (Vite) handles environment variable injection and provides hot 
 - `SESSION_SECRET` - ✅ Set
 
 **Deployment Configuration:**
-- Deployment target: Autoscale (configured via deploy_config_tool)
+- Deployment target: Autoscale (stateless web app)
 - Build command: `npm run build` (Vite production build)
-- Run command: `vite preview` (production preview server)
+- Run command: `npm run preview` (serves production build)
+- Port: 5000 (configured in vite.config.js)
+- Ready to publish via Replit's deployment button
 
 ### Testing
 
