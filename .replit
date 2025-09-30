@@ -138,6 +138,51 @@ args = "node scripts/diagnostic-complet.js"
 task = "shell.exec"
 args = "echo \"🎯 DIAGNOSTIC TERMINÉ - Vérifiez les résultats ci-dessus\""
 
+[[workflows.workflow]]
+name = "Fix Complete Database"
+author = 48146905
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Vérification des variables d'environnement...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/check-database.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🚀 Création des tables manquantes...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/create-tables-direct.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Vérification finale...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/check-database.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🎯 CORRECTION TERMINÉE - Redémarrez l'application\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
