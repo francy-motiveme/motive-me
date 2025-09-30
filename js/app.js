@@ -88,7 +88,7 @@ class MotiveMeApp {
         window.createChallenge = () => this.createChallenge();
         window.checkIn = () => this.checkIn();
         window.switchTab = (tab) => this.switchTab(tab);
-        window.showScreen = (screenId) => uiManager.showScreen(screenId);
+        window.showScreen = (screenId) => showScreen(screenId);
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
         window.selectGage = (element, gage) => this.selectGage(element, gage);
