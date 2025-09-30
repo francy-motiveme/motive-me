@@ -98,18 +98,20 @@ export class AuthManager {
 
             const { email, password, name } = validation.data;
 
-            // Vérifier email pas déjà utilisé
-            const emailCheck = await database.client
-                .from('users')
-                .select('email')
-                .eq('email', email)
-                .single();
+            // Vérifier email pas déjà utilisé (si connexion database disponible)
+            if (database.client) {
+                const emailCheck = await database.client
+                    .from('users')
+                    .select('email')
+                    .eq('email', email)
+                    .single();
 
-            if (emailCheck.data && !emailCheck.error) {
-                return {
-                    success: false,
-                    error: 'Email déjà utilisé'
-                };
+                if (emailCheck.data && !emailCheck.error) {
+                    return {
+                        success: false,
+                        error: 'Email déjà utilisé'
+                    };
+                }
             }
 
             // Tentative d'inscription
@@ -623,6 +625,11 @@ export class AuthManager {
         try {
             console.log('📤 Renvoi email confirmation pour:', email);
 
+            if (!database.client) {
+                showNotification('Service d\'email non disponible en mode hors ligne', 'warning');
+                return;
+            }
+
             const { error } = await database.client.auth.resend({
                 type: 'signup',
                 email: email
@@ -667,6 +674,10 @@ export class AuthManager {
         }
 
         try {
+            if (!database.client) {
+                return { success: false, error: 'Service non disponible en mode hors ligne' };
+            }
+
             // Supabase gère le changement de mot de passe
             const { error } = await database.client.auth.updateUser({
                 password: newPassword
@@ -691,6 +702,10 @@ export class AuthManager {
         }
 
         try {
+            if (!database.client) {
+                return { success: false, error: 'Service non disponible en mode hors ligne' };
+            }
+
             const { error } = await database.client.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/reset-password`
             });

@@ -5,33 +5,40 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
 
+let supabase = null;
+let configError = null;
+
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Variables d\'environnement Supabase manquantes');
     console.error('Veuillez configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans les secrets Replit');
-    throw new Error('Configuration Supabase manquante');
-}
-
-// Initialiser Supabase avec configuration sécurisée
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-        storageKey: 'motiveme-auth'
-    },
-    realtime: {
-        params: {
-            eventsPerSecond: 10
-        }
-    },
-    global: {
-        headers: {
-            'X-Client-Info': 'motiveme-web'
-        }
+    configError = 'Configuration Supabase manquante';
+} else {
+    // Initialiser Supabase avec configuration sécurisée
+    try {
+        supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: false,
+                storageKey: 'motiveme-auth'
+            },
+            realtime: {
+                params: {
+                    eventsPerSecond: 10
+                }
+            },
+            global: {
+                headers: {
+                    'X-Client-Info': 'motiveme-web'
+                }
+            }
+        });
+        console.log('✅ Supabase client initialized:', !!supabase);
+    } catch (error) {
+        console.error('❌ Erreur initialisation Supabase:', error);
+        configError = error.message;
     }
-});
-
-console.log('✅ Supabase client initialized:', !!supabase);
+}
 
 // Classe Database pour gérer toutes les interactions
 class Database {
@@ -51,6 +58,12 @@ class Database {
         }
 
         try {
+            // Vérifier si supabase est disponible
+            if (!supabase || configError) {
+                console.warn('⚠️ Supabase non disponible:', configError || 'Client non initialisé');
+                return this.activateFallbackMode();
+            }
+
             // Utiliser le client global déjà initialisé
             this.client = supabase;
 

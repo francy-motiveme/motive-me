@@ -2,8 +2,8 @@
 export class EmailService {
     constructor() {
         this.isInitialized = false;
-        this.emailjsKey = process.env.EMAILJS_PUBLIC_KEY || '';
-        this.serviceId = process.env.EMAILJS_SERVICE_ID || 'default_service';
+        this.emailjsKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
+        this.serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'default_service';
         this.templates = this.initializeTemplates();
     }
 

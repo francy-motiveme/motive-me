@@ -24,8 +24,13 @@ class MotiveMeApp {
         try {
             console.log('🚀 Initialisation MotiveMe...');
 
-            // Initialiser les managers
-            await authManager.initialize();
+            // Initialiser les managers dans le bon ordre
+            await Promise.all([
+                authManager.initialize(),
+                emailService.initialize(),
+                analyticsManager.initialize()
+            ]);
+            console.log('✅ Tous les managers initialisés');
 
             // Écouter les changements d'authentification
             authManager.addAuthListener((event, user) => {
