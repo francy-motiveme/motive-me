@@ -2,15 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuration sécurisée avec variables d'environnement
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || '';
 
 let supabase = null;
 let configError = null;
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Variables d\'environnement Supabase manquantes');
-    console.error('Veuillez configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans les secrets Replit');
+    console.error('Veuillez configurer SUPABASE_URL et SUPABASE_ANON_KEY dans les secrets Replit');
     configError = 'Configuration Supabase manquante';
 } else {
     // Initialiser Supabase avec configuration sécurisée
