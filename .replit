@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web"]
+modules = ["nodejs-20", "web", "postgresql-16"]
 [agent]
 expertMode = true
 
@@ -17,6 +17,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "MotiveMe"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend API"
 
 [[workflows.workflow]]
 name = "MotiveMe"
@@ -183,6 +187,22 @@ args = "echo \"\""
 task = "shell.exec"
 args = "echo \"🎯 CORRECTION TERMINÉE - Redémarrez l'application\""
 
+[[workflows.workflow]]
+name = "Backend API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node server/index.js"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
 [[ports]]
 localPort = 5000
 externalPort = 80
@@ -192,12 +212,12 @@ localPort = 34105
 externalPort = 3002
 
 [[ports]]
-localPort = 39207
-externalPort = 3001
+localPort = 37845
+externalPort = 4200
 
 [[ports]]
-localPort = 41625
-externalPort = 3003
+localPort = 39207
+externalPort = 3001
 
 [[ports]]
 localPort = 44745

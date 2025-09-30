@@ -46,9 +46,9 @@ class MotiveMeApp {
                 this.currentUser = currentUser;
                 await this.loadDashboard();
                 showScreen('dashboardScreen');
-                this.updateUserInfo();
             } else {
-                showScreen('loginScreen');
+                // Mode invité : afficher l'écran d'accueil au lieu de forcer le login
+                showScreen('welcomeScreen');
             }
 
             this.isInitialized = true;
@@ -57,7 +57,7 @@ class MotiveMeApp {
             // Message de bienvenue différé
             setTimeout(() => {
                 if (!authManager.isAuthenticated()) {
-                    showNotification('🎯 Bienvenue sur MotiveMe ! Crée ton compte pour commencer');
+                    showNotification('🎯 Bienvenue sur MotiveMe ! Commence sans inscription');
                 }
             }, 1000);
 
@@ -96,6 +96,11 @@ class MotiveMeApp {
         window.uploadProof = () => this.uploadProof();
         window.loadRecentBadges = () => this.loadRecentBadges();
         window.loadBadgesScreen = () => this.loadBadgesScreen();
+        window.showSignupModal = () => this.showSignupModal();
+        window.hideSignupModal = () => this.hideSignupModal();
+        window.signupFromModal = () => this.signupFromModal();
+        window.showSettings = () => this.showSettings();
+        window.updateProfile = () => this.updateProfile();
 
         // Gérer les changements d'écran
         document.addEventListener('screenChange', (e) => {
@@ -190,6 +195,12 @@ class MotiveMeApp {
 
                 // Pré-remplir l'email de connexion
                 document.getElementById('loginEmail').value = email;
+
+                // Vérifier s'il y a un challenge temporaire à créer
+                const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
+                if (tempChallenge) {
+                    console.log('📦 Challenge temporaire trouvé, sera créé après connexion');
+                }
             } else {
                 showNotification(result.error, 'error');
             }
@@ -230,13 +241,16 @@ class MotiveMeApp {
                 this.loadDashboard();
                 console.log('🔄 Changement vers dashboard...');
                 showScreen('dashboardScreen');
+                
+                // Vérifier et créer le challenge temporaire après connexion
+                this.checkAndCreateTempChallenge();
                 break;
 
             case 'SIGNED_OUT':
             case 'NO_SESSION':
                 console.log('🔄 Déconnexion utilisateur ou aucune session');
                 this.currentUser = null;
-                showScreen('loginScreen');
+                showScreen('welcomeScreen');
                 this.clearUserInfo();
                 break;
 
@@ -263,19 +277,22 @@ class MotiveMeApp {
             userInfo.style.display = 'flex';
         }
 
-        if (userEmail) {
+        if (userEmail && userEmail.textContent !== this.currentUser.email) {
             userEmail.textContent = this.currentUser.email;
         }
 
         if (userPoints) {
-            userPoints.textContent = `${this.currentUser.points || 0} pts`;
+            const pointsText = `${this.currentUser.points || 0} pts`;
+            if (userPoints.textContent !== pointsText) {
+                userPoints.textContent = pointsText;
+            }
         }
 
-        if (profileName) {
+        if (profileName && profileName.textContent !== (this.currentUser.name || 'Utilisateur')) {
             profileName.textContent = this.currentUser.name || 'Utilisateur';
         }
 
-        if (profileEmail) {
+        if (profileEmail && profileEmail.textContent !== this.currentUser.email) {
             profileEmail.textContent = this.currentUser.email;
         }
     }
@@ -453,19 +470,31 @@ class MotiveMeApp {
         else if (this.selectedGage === 'don') gageText = 'Faire un don de 10€';
         else if (this.selectedGage === 'custom') gageText = document.getElementById('customGage').value;
 
+        const formData = {
+            title,
+            duration,
+            frequency,
+            customDays: frequency === 'custom' ? this.selectedDays : [],
+            witnessEmail,
+            gage: gageText,
+            reminderTime
+        };
+
+        // VÉRIFIER SI UTILISATEUR CONNECTÉ
+        if (!authManager.isAuthenticated()) {
+            // Mode invité : sauvegarder en localStorage et afficher modal inscription
+            console.log('🔄 Mode invité : sauvegarde du challenge temporaire');
+            localStorage.setItem('motiveme_temp_challenge', JSON.stringify(formData));
+            
+            // Afficher la modal d'inscription contextuelle
+            this.showSignupModal();
+            return;
+        }
+
+        // Utilisateur connecté : créer normalement
         setLoading('createChallengeBtn', true, 'Création...');
 
         try {
-            const formData = {
-                title,
-                duration,
-                frequency,
-                customDays: frequency === 'custom' ? this.selectedDays : [],
-                witnessEmail,
-                gage: gageText,
-                reminderTime
-            };
-
             const result = await challengeManager.createChallenge(formData, this.currentUser.id);
 
             if (result.success) {
@@ -672,7 +701,6 @@ class MotiveMeApp {
 
                 // Rafraîchir l'affichage
                 this.viewChallenge(this.currentChallengeId);
-                this.updateUserInfo();
             } else {
                 showNotification(result.error, 'error');
             }
@@ -687,6 +715,86 @@ class MotiveMeApp {
     // ========== UPLOAD PREUVE ==========
     uploadProof() {
         showNotification('📸 Fonctionnalité de preuve photo disponible dans la version complète !');
+    }
+
+    // ========== MODE INVITÉ - MODAL INSCRIPTION ==========
+    showSignupModal() {
+        const modal = document.getElementById('signupModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideSignupModal() {
+        const modal = document.getElementById('signupModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    async signupFromModal() {
+        const name = document.getElementById('modalSignupName').value;
+        const email = document.getElementById('modalSignupEmail').value;
+        const password = document.getElementById('modalSignupPassword').value;
+
+        setLoading('modalSignupBtn', true, 'Création...');
+
+        try {
+            const result = await authManager.signUp({ name, email, password });
+
+            if (result.success) {
+                showNotification(result.message);
+                
+                // Fermer la modal
+                this.hideSignupModal();
+                
+                // Afficher écran de connexion avec email pré-rempli
+                showScreen('loginScreen');
+                document.getElementById('loginEmail').value = email;
+                
+                showNotification('Connecte-toi pour créer ton challenge !', 'info');
+            } else {
+                showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erreur signup modal:', error);
+            showNotification('Erreur lors de l\'inscription', 'error');
+        } finally {
+            setLoading('modalSignupBtn', false);
+        }
+    }
+
+    async checkAndCreateTempChallenge() {
+        const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
+        
+        if (tempChallenge && this.currentUser) {
+            try {
+                console.log('📦 Création du challenge temporaire...');
+                const formData = JSON.parse(tempChallenge);
+                
+                const result = await challengeManager.createChallenge(formData, this.currentUser.id);
+                
+                if (result.success) {
+                    showNotification('🎯 Ton challenge a été créé avec succès !');
+                    
+                    // Mettre à jour les points
+                    await authManager.updateUserProfile({
+                        points: this.currentUser.points + 10
+                    });
+                    
+                    // Supprimer le challenge temporaire
+                    localStorage.removeItem('motiveme_temp_challenge');
+                    
+                    // Recharger le dashboard
+                    this.loadDashboard();
+                } else {
+                    showNotification('Erreur lors de la création du challenge', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Erreur création challenge temporaire:', error);
+                showNotification('Erreur lors de la création du challenge', 'error');
+            }
+        }
     }
 
     // ========== GESTION ÉCRANS ==========
@@ -795,6 +903,87 @@ class MotiveMeApp {
             if (badgeCategoriesEl) {
                 badgeCategoriesEl.innerHTML = '<div class="error">Erreur lors du chargement des badges.</div>';
             }
+        }
+    }
+
+    // ========== GESTION PROFIL / PARAMÈTRES ==========
+    async showSettings() {
+        if (!authManager.isAuthenticated()) {
+            showNotification('Veuillez vous connecter pour accéder aux paramètres', 'error');
+            showScreen('loginScreen');
+            return;
+        }
+
+        try {
+            const user = authManager.getCurrentUser();
+
+            document.getElementById('settingsFirstName').value = user.first_name || '';
+            document.getElementById('settingsLastName').value = user.last_name || '';
+            document.getElementById('settingsEmail').value = user.email || '';
+            document.getElementById('settingsPhone').value = user.phone || '';
+
+            showScreen('settingsScreen');
+        } catch (error) {
+            console.error('❌ Erreur chargement paramètres:', error);
+            showNotification('Erreur lors du chargement des paramètres', 'error');
+        }
+    }
+
+    async updateProfile() {
+        if (!authManager.isAuthenticated()) {
+            showNotification('Veuillez vous connecter', 'error');
+            return;
+        }
+
+        const firstName = document.getElementById('settingsFirstName').value.trim();
+        const lastName = document.getElementById('settingsLastName').value.trim();
+        const email = document.getElementById('settingsEmail').value.trim();
+        const phone = document.getElementById('settingsPhone').value.trim();
+
+        if (!firstName || !lastName) {
+            showNotification('Le prénom et le nom sont obligatoires', 'error');
+            return;
+        }
+
+        const emailValidation = Validators.validateEmail(email);
+        if (!emailValidation.valid) {
+            showNotification(emailValidation.message, 'error');
+            return;
+        }
+
+        if (phone && phone.length > 0) {
+            const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+            if (!phoneRegex.test(phone)) {
+                showNotification('Le format du téléphone est invalide', 'error');
+                return;
+            }
+        }
+
+        setLoading('saveSettingsBtn', true, 'Sauvegarde...');
+
+        try {
+            const updates = {
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+                phone: phone || null
+            };
+
+            const result = await authManager.updateUserProfile(updates);
+
+            if (result.success) {
+                showNotification('✅ Profil mis à jour avec succès');
+                this.currentUser = result.data;
+                this.updateUserInfo();
+                showScreen('dashboardScreen');
+            } else {
+                showNotification(result.error || 'Erreur lors de la mise à jour', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erreur mise à jour profil:', error);
+            showNotification('Erreur lors de la mise à jour du profil', 'error');
+        } finally {
+            setLoading('saveSettingsBtn', false);
         }
     }
 }

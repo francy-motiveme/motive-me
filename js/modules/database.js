@@ -1,55 +1,40 @@
-// Base de données - Interface Supabase sécurisée
-import { createClient } from '@supabase/supabase-js';
+// Base de données - Interface Express API Backend
+const API_BASE_URL = 'http://localhost:3000/api';
 
-// Configuration sécurisée avec variables d'environnement
-const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://eiaxdfkkfhkixnuckkma.supabase.co';
-const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || '';
+class EventEmitter {
+    constructor() {
+        this.listeners = [];
+    }
 
-let supabase = null;
-let configError = null;
+    subscribe(callback) {
+        this.listeners.push(callback);
+        return () => {
+            this.listeners = this.listeners.filter(cb => cb !== callback);
+        };
+    }
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Variables d\'environnement Supabase manquantes');
-    console.error('Veuillez configurer SUPABASE_URL et SUPABASE_ANON_KEY dans les secrets Replit');
-    configError = 'Configuration Supabase manquante';
-} else {
-    // Initialiser Supabase avec configuration sécurisée
-    try {
-        supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: false,
-                storageKey: 'motiveme-auth'
-            },
-            realtime: {
-                params: {
-                    eventsPerSecond: 10
-                }
-            },
-            global: {
-                headers: {
-                    'X-Client-Info': 'motiveme-web'
-                }
+    emit(event, session) {
+        this.listeners.forEach(callback => {
+            try {
+                callback(event, session);
+            } catch (error) {
+                console.error('❌ Erreur dans listener:', error);
             }
         });
-        console.log('✅ Supabase client initialized:', !!supabase);
-    } catch (error) {
-        console.error('❌ Erreur initialisation Supabase:', error);
-        configError = error.message;
     }
 }
 
-// Classe Database pour gérer toutes les interactions
 class Database {
-    // ========== INITIALISATION ==========
     constructor() {
         this.client = null;
         this.isConnected = false;
+        this.isInitialized = false;
+        this.authEmitter = new EventEmitter();
+        this.currentSession = null;
         this.retryCount = 0;
         this.maxRetries = 3;
         this.connectionTimeout = 10000;
-        this.isInitialized = false;
+        this.fallbackMode = false;
     }
 
     async connect() {
@@ -58,33 +43,25 @@ class Database {
         }
 
         try {
-            // Vérifier si supabase est disponible
-            if (!supabase || configError) {
-                console.warn('⚠️ Supabase non disponible:', configError || 'Client non initialisé');
-                return this.activateFallbackMode();
-            }
-
-            // Utiliser le client global déjà initialisé
-            this.client = supabase;
-
-            // Test de connexion simple
-            const { data, error } = await Promise.race([
-                this.client.from('users').select('id').limit(1),
+            const response = await Promise.race([
+                fetch(`${API_BASE_URL.replace('/api', '')}/api/health`, {
+                    credentials: 'include'
+                }),
                 new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Timeout')), this.connectionTimeout)
                 )
             ]);
 
-            // Accepter l'erreur si les tables n'existent pas encore
-            if (error && !error.message.includes('does not exist') && !error.message.includes('schema cache')) {
-                throw error;
+            if (!response.ok) {
+                throw new Error('API non disponible');
             }
 
+            this.client = { connected: true };
             this.isConnected = true;
             this.isInitialized = true;
             this.retryCount = 0;
 
-            console.log('✅ Database connectée à Supabase');
+            console.log('✅ Database connectée à Express API');
             return { success: true, message: 'Connexion réussie' };
 
         } catch (error) {
@@ -97,7 +74,6 @@ class Database {
                 return this.connect();
             }
 
-            // Activer le mode dégradé en cas d'échec
             return this.activateFallbackMode();
         }
     }
@@ -107,6 +83,7 @@ class Database {
         this.isConnected = false;
         this.isInitialized = true;
         this.fallbackMode = true;
+        this.client = null;
 
         return { 
             success: true, 
@@ -115,21 +92,55 @@ class Database {
         };
     }
 
-    // ========== AUTHENTIFICATION ==========
-    async signUp(email, password, metadata = {}) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
+    async _fetch(endpoint, options = {}) {
+        const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+        
+        const defaultOptions = {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        };
+
         try {
-            const { data, error } = await this.client.auth.signUp({
-                email,
-                password,
-                options: { data: metadata }
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    this.currentSession = null;
+                    this.authEmitter.emit('SIGNED_OUT', null);
+                }
+                throw new Error(data.error || `HTTP ${response.status}`);
+            }
+
+            return { success: true, response, data };
+        } catch (error) {
+            console.error(`❌ Fetch error [${endpoint}]:`, error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async signUp(email, password, metadata = {}) {
+        try {
+            const result = await this._fetch('/auth/signup', {
+                method: 'POST',
+                body: JSON.stringify({ email, password, metadata })
             });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            const { user, session } = result.data;
+            this.currentSession = session;
+
+            setTimeout(() => {
+                this.authEmitter.emit('SIGNED_IN', { user, session });
+            }, 100);
+
+            return { success: true, data: { user, session } };
         } catch (error) {
             console.error('❌ Erreur inscription:', error);
             return { success: false, error: error.message };
@@ -137,18 +148,24 @@ class Database {
     }
 
     async signIn(email, password) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client.auth.signInWithPassword({
-                email,
-                password
+            const result = await this._fetch('/auth/signin', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
             });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            const { user, session } = result.data;
+            this.currentSession = session;
+
+            setTimeout(() => {
+                this.authEmitter.emit('SIGNED_IN', { user, session });
+            }, 100);
+
+            return { success: true, data: { user, session } };
         } catch (error) {
             console.error('❌ Erreur connexion:', error);
             return { success: false, error: error.message };
@@ -156,13 +173,21 @@ class Database {
     }
 
     async signOut() {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { error } = await this.client.auth.signOut();
-            if (error) throw error;
+            const result = await this._fetch('/auth/signout', {
+                method: 'POST'
+            });
+
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            this.currentSession = null;
+
+            setTimeout(() => {
+                this.authEmitter.emit('SIGNED_OUT', null);
+            }, 100);
+
             return { success: true };
         } catch (error) {
             console.error('❌ Erreur déconnexion:', error);
@@ -171,63 +196,63 @@ class Database {
     }
 
     async getCurrentSession() {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data: { session }, error } = await this.client.auth.getSession();
-            if (error) throw error;
-            return { success: true, session };
+            const result = await this._fetch('/auth/session');
+
+            if (!result.success) {
+                this.currentSession = null;
+                return { success: true, session: null };
+            }
+
+            const { session, user } = result.data;
+            
+            if (session && user) {
+                this.currentSession = { ...session, user };
+                return { success: true, session: this.currentSession };
+            }
+
+            this.currentSession = null;
+            return { success: true, session: null };
         } catch (error) {
             console.error('❌ Erreur session:', error);
-            return { success: false, error: error.message };
+            this.currentSession = null;
+            return { success: true, session: null };
         }
     }
 
     onAuthStateChange(callback) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return () => {}; // Retourner une fonction vide pour le unsubscribe
-        }
-        return this.client.auth.onAuthStateChange(callback);
+        const unsubscribe = this.authEmitter.subscribe(callback);
+
+        setTimeout(async () => {
+            const sessionResult = await this.getCurrentSession();
+            if (sessionResult.success && sessionResult.session) {
+                callback('INITIAL_SESSION', sessionResult.session);
+            } else {
+                callback('NO_SESSION', null);
+            }
+        }, 100);
+
+        return { data: { subscription: { unsubscribe } } };
     }
 
-    // ========== UTILISATEURS ==========
     async createUser(userData) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
-        try {
-            const { data, error } = await this.client
-                .from('users')
-                .insert([userData])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('❌ Erreur création utilisateur:', error);
-            return { success: false, error: error.message };
-        }
+        console.warn('⚠️ createUser: géré par signUp dans Express API');
+        return { 
+            success: true, 
+            data: userData,
+            message: 'User creation handled by signUp'
+        };
     }
 
     async getUserById(userId) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('users')
-                .select('*')
-                .eq('id', userId)
-                .single();
+            const result = await this._fetch(`/users/${userId}`);
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur récupération utilisateur:', error);
             return { success: false, error: error.message };
@@ -235,41 +260,35 @@ class Database {
     }
 
     async updateUser(userId, updates) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('users')
-                .update(updates)
-                .eq('id', userId)
-                .select()
-                .single();
+            const result = await this._fetch(`/users/${userId}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates)
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur mise à jour utilisateur:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // ========== CHALLENGES ==========
     async createChallenge(challengeData) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('challenges')
-                .insert([challengeData])
-                .select()
-                .single();
+            const result = await this._fetch('/challenges', {
+                method: 'POST',
+                body: JSON.stringify(challengeData)
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur création challenge:', error);
             return { success: false, error: error.message };
@@ -277,19 +296,14 @@ class Database {
     }
 
     async getChallengesByUser(userId) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('challenges')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+            const result = await this._fetch('/challenges');
 
-            if (error) throw error;
-            return { success: true, data: data || [] };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data || [] };
         } catch (error) {
             console.error('❌ Erreur récupération challenges:', error);
             return { success: false, error: error.message };
@@ -297,20 +311,17 @@ class Database {
     }
 
     async updateChallenge(challengeId, updates) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('challenges')
-                .update(updates)
-                .eq('id', challengeId)
-                .select()
-                .single();
+            const result = await this._fetch(`/challenges/${challengeId}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updates)
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur mise à jour challenge:', error);
             return { success: false, error: error.message };
@@ -318,17 +329,15 @@ class Database {
     }
 
     async deleteChallenge(challengeId) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { error } = await this.client
-                .from('challenges')
-                .delete()
-                .eq('id', challengeId);
+            const result = await this._fetch(`/challenges/${challengeId}`, {
+                method: 'DELETE'
+            });
 
-            if (error) throw error;
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
             return { success: true };
         } catch (error) {
             console.error('❌ Erreur suppression challenge:', error);
@@ -336,21 +345,18 @@ class Database {
         }
     }
 
-    // ========== CHECK-INS ==========
     async createCheckIn(checkInData) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('check_ins')
-                .insert([checkInData])
-                .select()
-                .single();
+            const result = await this._fetch('/check-ins', {
+                method: 'POST',
+                body: JSON.stringify(checkInData)
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur création check-in:', error);
             return { success: false, error: error.message };
@@ -358,40 +364,32 @@ class Database {
     }
 
     async getCheckInsByChallenge(challengeId) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('check_ins')
-                .select('*')
-                .eq('challenge_id', challengeId)
-                .order('checked_at', { ascending: false });
+            const result = await this._fetch(`/check-ins?challenge_id=${challengeId}`);
 
-            if (error) throw error;
-            return { success: true, data: data || [] };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data || [] };
         } catch (error) {
             console.error('❌ Erreur récupération check-ins:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // ========== NOTIFICATIONS ==========
     async createNotification(notificationData) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .insert([notificationData])
-                .select()
-                .single();
+            const result = await this._fetch('/notifications', {
+                method: 'POST',
+                body: JSON.stringify(notificationData)
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur création notification:', error);
             return { success: false, error: error.message };
@@ -399,20 +397,14 @@ class Database {
     }
 
     async getNotificationsByUser(userId, limit = 50) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(limit);
+            const result = await this._fetch(`/notifications?limit=${limit}`);
 
-            if (error) throw error;
-            return { success: true, data: data || [] };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data || [] };
         } catch (error) {
             console.error('❌ Erreur récupération notifications:', error);
             return { success: false, error: error.message };
@@ -420,111 +412,56 @@ class Database {
     }
 
     async markNotificationAsRead(notificationId) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
         try {
-            const { data, error } = await this.client
-                .from('notifications')
-                .update({ read: true })
-                .eq('id', notificationId)
-                .select()
-                .single();
+            const result = await this._fetch(`/notifications/${notificationId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ read: true })
+            });
 
-            if (error) throw error;
-            return { success: true, data };
+            if (!result.success) {
+                return { success: false, error: result.error };
+            }
+
+            return { success: true, data: result.data.data };
         } catch (error) {
             console.error('❌ Erreur mise à jour notification:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // ========== STORAGE ==========
     async uploadFile(bucket, path, file) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
-        try {
-            const { data, error } = await this.client.storage
-                .from(bucket)
-                .upload(path, file);
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('❌ Erreur upload fichier:', error);
-            return { success: false, error: error.message };
-        }
+        console.warn('⚠️ uploadFile: non implémenté dans Express API (placeholder)');
+        return { 
+            success: false, 
+            error: 'File upload not implemented in Express API yet' 
+        };
     }
 
     async deleteFile(bucket, path) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
-        try {
-            const { data, error } = await this.client.storage
-                .from(bucket)
-                .remove([path]);
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('❌ Erreur suppression fichier:', error);
-            return { success: false, error: error.message };
-        }
+        console.warn('⚠️ deleteFile: non implémenté dans Express API (placeholder)');
+        return { 
+            success: false, 
+            error: 'File deletion not implemented in Express API yet' 
+        };
     }
 
     getPublicUrl(bucket, path) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return { success: false, error: 'Client Supabase non initialisé' };
-        }
-        try {
-            const { data } = this.client.storage
-                .from(bucket)
-                .getPublicUrl(path);
-
-            return { success: true, url: data.publicUrl };
-        } catch (error) {
-            console.error('❌ Erreur URL publique:', error);
-            return { success: false, error: error.message };
-        }
+        console.warn('⚠️ getPublicUrl: non implémenté dans Express API (placeholder)');
+        return { 
+            success: false, 
+            error: 'Public URL not implemented in Express API yet' 
+        };
     }
 
-    // ========== REAL-TIME ==========
     subscribeToTable(table, callback, filter = {}) {
-        if (!this.client) {
-            console.error('❌ Client Supabase non initialisé');
-            return null;
-        }
-        try {
-            const subscription = this.client
-                .channel(`${table}_changes`)
-                .on('postgres_changes', 
-                    { 
-                        event: '*', 
-                        schema: 'public', 
-                        table,
-                        ...filter 
-                    }, 
-                    callback
-                )
-                .subscribe();
-
-            return subscription;
-        } catch (error) {
-            console.error('❌ Erreur subscription:', error);
-            return null;
-        }
+        console.warn('⚠️ subscribeToTable: real-time non implémenté dans Express API');
+        return null;
     }
 
     unsubscribe(subscription) {
         try {
             if (subscription) {
-                subscription.unsubscribe();
+                console.log('✅ Unsubscribe effectué');
                 return { success: true };
             }
         } catch (error) {
@@ -534,10 +471,8 @@ class Database {
     }
 }
 
-// Instance singleton
 const database = new Database();
 
-// Auto-initialisation
 (async () => {
     try {
         await database.connect();
@@ -548,4 +483,4 @@ const database = new Database();
 })();
 
 export default database;
-export { Database, supabase };
+export { Database };

@@ -533,6 +533,106 @@
             font-weight: 600;
             color: #1f2937;
         }
+
+        /* Styles pour la modal d'inscription */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            width: auto;
+            padding: 5px;
+            color: #6b7280;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+            transform: none;
+        }
+
+        .welcome-hero {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-hero h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-hero p {
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .feature-list {
+            list-style: none;
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: var(--success);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -547,8 +647,36 @@
             </div>
         </div>
 
+        <!-- Écran d'accueil (mode invité) -->
+        <div class="screen active" id="welcomeScreen">
+            <div class="welcome-hero">
+                <h2>🎯 MotiveMe</h2>
+                <p>Atteins tes objectifs avec la pression sociale</p>
+                
+                <ul class="feature-list">
+                    <li>Crée des challenges personnalisés</li>
+                    <li>Désigne un témoin pour te motiver</li>
+                    <li>Fais tes check-ins quotidiens</li>
+                    <li>Gagne des badges et des points</li>
+                </ul>
+            </div>
+
+            <button onclick="showScreen('createChallengeScreen')" style="margin-bottom: 10px;">
+                🚀 Créer mon premier challenge
+            </button>
+
+            <button class="secondary" onclick="showScreen('loginScreen')">
+                J'ai déjà un compte
+            </button>
+
+            <p style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px;">
+                Tu peux créer un challenge sans t'inscrire.<br>
+                On te demandera de créer un compte pour le sauvegarder 😉
+            </p>
+        </div>
+
         <!-- Écran de connexion -->
-        <div class="screen active" id="loginScreen">
+        <div class="screen" id="loginScreen">
             <h2 style="text-align: center; margin-bottom: 30px;">Bienvenue ! 👋</h2>
             
             <form id="loginForm" onsubmit="return handleLogin(event)">
@@ -681,7 +809,11 @@
                     <span style="font-size: 40px;">🔥</span>
                 </div>
 
-                <button class="danger" onclick="logout()" style="margin-top: 40px;">
+                <button onclick="showSettings()" style="margin-top: 30px;">
+                    ⚙️ Paramètres du profil
+                </button>
+
+                <button class="danger" onclick="logout()" style="margin-top: 15px;">
                     Déconnexion
                 </button>
             </div>
@@ -824,6 +956,78 @@
         <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 20px; width: 100%;">
             ← Retour au tableau de bord
         </button>
+    </div>
+
+    <!-- Écran Paramètres -->
+    <div class="screen" id="settingsScreen" style="display: none;">
+        <div class="header">
+            <h2>⚙️ Paramètres du profil</h2>
+            <p class="subtitle">Modifier mes informations personnelles</p>
+        </div>
+
+        <form id="settingsForm" onsubmit="return false;">
+            <div class="form-group">
+                <label for="settingsFirstName">Prénom</label>
+                <input type="text" id="settingsFirstName" placeholder="Jean" required>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsLastName">Nom</label>
+                <input type="text" id="settingsLastName" placeholder="Dupont" required>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsEmail">Email</label>
+                <input type="email" id="settingsEmail" placeholder="jean.dupont@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsPhone">Téléphone (optionnel)</label>
+                <input type="tel" id="settingsPhone" placeholder="+33 6 12 34 56 78">
+            </div>
+
+            <button onclick="updateProfile()" id="saveSettingsBtn" style="margin-top: 20px;">
+                💾 Sauvegarder les modifications
+            </button>
+
+            <button class="secondary" onclick="showScreen('dashboardScreen')" style="margin-top: 10px;">
+                Annuler
+            </button>
+        </form>
+    </div>
+
+    <!-- Modal d'inscription contextuelle (mode invité) -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="hideSignupModal()">×</button>
+            
+            <h2 style="text-align: center; margin-bottom: 15px;">🎯 Sauvegarde ton challenge</h2>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 25px;">
+                Pour sauvegarder ton challenge, crée ton compte gratuitement en 30 secondes
+            </p>
+            
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" id="modalSignupName" placeholder="Nicolas" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="modalSignupEmail" placeholder="ton@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="modalSignupPassword" placeholder="••••••••" required>
+            </div>
+            
+            <button onclick="signupFromModal()" id="modalSignupBtn">Créer mon compte et sauvegarder</button>
+            
+            <p style="text-align: center; margin-top: 15px; color: #6b7280; font-size: 14px;">
+                Déjà un compte ? 
+                <a href="#" onclick="hideSignupModal(); showScreen('loginScreen');" style="color: var(--primary);">Se connecter</a>
+            </p>
+        </div>
     </div>
 
     <!-- Application modulaire sécurisée -->
