@@ -146,8 +146,9 @@ localPort = 44745
 externalPort = 3000
 
 [deployment]
-run = ["npm", "run", "build", "&&", "npm", "run", "preview"]
-deploymentTarget = "cloudrun"
+run = ["npm", "run", "preview"]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
 
 [env]
 NODE_ENV = "production"
