@@ -98,25 +98,8 @@ export class AuthManager {
 
             const { email, password, name } = validation.data;
 
-            // Vérifier email pas déjà utilisé (si connexion database disponible)
-            if (database.client) {
-                const emailCheck = await database.client
-                    .from('users')
-                    .select('email')
-                    .eq('email', email)
-                    .single();
-
-                if (emailCheck.data && !emailCheck.error) {
-                    return {
-                        success: false,
-                        error: 'Email déjà utilisé'
-                    };
-                }
-            }
-
-            // Tentative d'inscription
             const signUpResult = await database.signUp(email, password, {
-                full_name: name,
+                name: name,
                 signup_timestamp: new Date().toISOString(),
                 email_verified: false
             });
@@ -125,51 +108,13 @@ export class AuthManager {
                 return { success: false, error: signUpResult.error };
             }
 
-            // Créer le profil utilisateur
-            const userProfile = {
-                id: signUpResult.data.user.id,
-                email: email,
-                name: name,
-                points: 0,
-                level: 1,
-                badges: [],
-                preferences: {
-                    notifications: true,
-                    email_reminders: true,
-                    theme: 'light'
-                },
-                stats: {
-                    challenges_created: 0,
-                    challenges_completed: 0,
-                    total_checkins: 0,
-                    current_streak: 0,
-                    longest_streak: 0
-                },
-                created_at: new Date().toISOString()
-            };
-
-            const createUserResult = await database.createUser(userProfile);
-
-            if (!createUserResult.success) {
-                console.error('❌ Erreur création profil:', createUserResult.error);
-                // L'utilisateur auth existe mais pas le profil - on peut continuer
-            }
-
-            // Notification de bienvenue
-            if (createUserResult.success) {
-                await database.createNotification({
-                    user_id: signUpResult.data.user.id,
-                    type: 'welcome',
-                    title: 'Bienvenue sur MotiveMe ! 🎯',
-                    message: 'Ton compte a été créé avec succès. Prêt à relever tes premiers challenges ?',
-                    read: false
-                });
-            }
+            await this.loadUserProfile(signUpResult.data.user);
 
             return {
                 success: true,
-                message: 'Compte créé avec succès ! Tu peux maintenant te connecter.',
-                user: signUpResult.data.user
+                message: signUpResult.message || `Bienvenue ${this.currentUser?.name || 'anonyme'} ! 👋`,
+                user: this.currentUser,
+                autoLogin: true
             };
 
         } catch (error) {

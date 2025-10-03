@@ -191,12 +191,12 @@ class MotiveMeApp {
 
             if (result.success) {
                 showNotification(result.message);
-                showScreen('loginScreen');
-
-                // Pré-remplir l'email de connexion
-                document.getElementById('loginEmail').value = email;
-
-                // Vérifier s'il y a un challenge temporaire à créer
+                
+                if (!result.autoLogin) {
+                    showScreen('loginScreen');
+                    document.getElementById('loginEmail').value = email;
+                }
+                
                 const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
                 if (tempChallenge) {
                     console.log('📦 Challenge temporaire trouvé, sera créé après connexion');

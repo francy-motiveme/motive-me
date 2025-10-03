@@ -235,14 +235,6 @@ class Database {
         return { data: { subscription: { unsubscribe } } };
     }
 
-    async createUser(userData) {
-        console.warn('⚠️ createUser: géré par signUp dans Express API');
-        return { 
-            success: true, 
-            data: userData,
-            message: 'User creation handled by signUp'
-        };
-    }
 
     async getUserById(userId) {
         try {
