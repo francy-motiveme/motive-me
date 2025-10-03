@@ -72,79 +72,9 @@ class MotiveMeApp {
 
     // ========== EXPOSITION DES FONCTIONS GLOBALES ==========
     exposeGlobalFunctions() {
-        // Fonctions d'authentification
-        window.login = () => this.login();
-        window.signup = () => this.signup();
-        window.logout = () => this.logout();
-
-        // Handlers de formulaires
-        window.handleLogin = (event) => {
-            event.preventDefault();
-            this.login();
-            return false;
-        };
-        window.handleSignup = (event) => {
-            event.preventDefault();
-            this.signup();
-            return false;
-        };
-
-        // Gestion des écrans - FONCTION GLOBALE CRITIQUE
-        window.showScreen = (screenId) => {
-            console.log('🔄 showScreen appelé:', screenId);
-
-            // Masquer tous les écrans
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-
-            // Afficher l'écran demandé
-            const targetScreen = document.getElementById(screenId);
-            if (targetScreen) {
-                targetScreen.classList.add('active');
-                console.log('✅ Écran affiché:', screenId);
-            } else {
-                console.error('❌ Écran non trouvé:', screenId);
-            }
-        };
-
-        // Fonctions de challenge
-        window.createChallenge = () => {
-            console.log('🎯 createChallenge appelé');
-            return this.createChallenge();
-        };
-        window.checkIn = () => this.checkIn();
-        window.viewChallenge = (id) => this.viewChallenge(id);
-        window.uploadProof = () => this.uploadProof();
-
-        // Gestion des onglets
-        window.switchTab = (tab) => {
-            console.log('📑 switchTab appelé:', tab);
-            return this.switchTab(tab);
-        };
-
-        // Fonctions de formulaire challenge
-        window.toggleDaysSelector = () => this.toggleDaysSelector();
-        window.toggleDay = (element) => this.toggleDay(element);
-        window.selectGage = (element, gage) => {
-            console.log('🎪 selectGage appelé:', gage);
-            return this.selectGage(element, gage);
-        };
-
-        // Badges
-        window.loadRecentBadges = () => this.loadRecentBadges();
-        window.loadBadgesScreen = () => this.loadBadgesScreen();
-
-        // Modal inscription
-        window.showSignupModal = () => this.showSignupModal();
-        window.hideSignupModal = () => this.hideSignupModal();
-        window.signupFromModal = () => this.signupFromModal();
-
-        // Profil
-        window.showSettings = () => this.showSettings();
-        window.updateProfile = () => this.updateProfile();
-
-        console.log('✅ Toutes les fonctions globales exposées');
+        // Les fonctions sont déjà exposées globalement au démarrage
+        // On met juste à jour les références pour pointer vers cette instance
+        console.log('✅ Mise à jour des références des fonctions globales vers l\'instance app');
     }
 
     // ========== GESTION UI ==========
@@ -1040,6 +970,124 @@ class MotiveMeApp {
 }
 
 // ========== INITIALISATION GLOBALE ==========
+// Fonctions globales d'urgence (disponibles IMMÉDIATEMENT pour les onclick)
+window.showScreen = function(screenId) {
+    console.log('🔄 [GLOBAL] showScreen appelé:', screenId);
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const screen = document.getElementById(screenId);
+    if (screen) {
+        screen.classList.add('active');
+        console.log('✅ [GLOBAL] Écran affiché:', screenId);
+    }
+};
+
+window.switchTab = function(tab) {
+    console.log('📑 [GLOBAL] switchTab appelé:', tab);
+    if (window.motiveMeApp && window.motiveMeApp.switchTab) {
+        window.motiveMeApp.switchTab(tab);
+    }
+};
+
+window.selectGage = function(element, gage) {
+    console.log('🎪 [GLOBAL] selectGage appelé:', gage);
+    document.querySelectorAll('.gage-option').forEach(o => o.classList.remove('selected'));
+    element.classList.add('selected');
+    if (window.motiveMeApp) {
+        window.motiveMeApp.selectedGage = gage;
+    }
+};
+
+window.createChallenge = function() {
+    console.log('🎯 [GLOBAL] createChallenge appelé');
+    if (window.motiveMeApp && window.motiveMeApp.createChallenge) {
+        return window.motiveMeApp.createChallenge();
+    }
+};
+
+window.handleLogin = function(e) {
+    e.preventDefault();
+    if (window.motiveMeApp && window.motiveMeApp.login) {
+        window.motiveMeApp.login();
+    }
+    return false;
+};
+
+window.handleSignup = function(e) {
+    e.preventDefault();
+    if (window.motiveMeApp && window.motiveMeApp.signup) {
+        window.motiveMeApp.signup();
+    }
+    return false;
+};
+
+window.toggleDaysSelector = function() {
+    if (window.motiveMeApp && window.motiveMeApp.toggleDaysSelector) {
+        window.motiveMeApp.toggleDaysSelector();
+    }
+};
+
+window.toggleDay = function(element) {
+    if (window.motiveMeApp && window.motiveMeApp.toggleDay) {
+        window.motiveMeApp.toggleDay(element);
+    }
+};
+
+window.checkIn = function() {
+    if (window.motiveMeApp && window.motiveMeApp.checkIn) {
+        window.motiveMeApp.checkIn();
+    }
+};
+
+window.viewChallenge = function(id) {
+    if (window.motiveMeApp && window.motiveMeApp.viewChallenge) {
+        window.motiveMeApp.viewChallenge(id);
+    }
+};
+
+window.uploadProof = function() {
+    if (window.motiveMeApp && window.motiveMeApp.uploadProof) {
+        window.motiveMeApp.uploadProof();
+    }
+};
+
+window.logout = function() {
+    if (window.motiveMeApp && window.motiveMeApp.logout) {
+        window.motiveMeApp.logout();
+    }
+};
+
+window.showSignupModal = function() {
+    if (window.motiveMeApp && window.motiveMeApp.showSignupModal) {
+        window.motiveMeApp.showSignupModal();
+    }
+};
+
+window.hideSignupModal = function() {
+    if (window.motiveMeApp && window.motiveMeApp.hideSignupModal) {
+        window.motiveMeApp.hideSignupModal();
+    }
+};
+
+window.signupFromModal = function() {
+    if (window.motiveMeApp && window.motiveMeApp.signupFromModal) {
+        window.motiveMeApp.signupFromModal();
+    }
+};
+
+window.showSettings = function() {
+    if (window.motiveMeApp && window.motiveMeApp.showSettings) {
+        window.motiveMeApp.showSettings();
+    }
+};
+
+window.updateProfile = function() {
+    if (window.motiveMeApp && window.motiveMeApp.updateProfile) {
+        window.motiveMeApp.updateProfile();
+    }
+};
+
+console.log('✅ [GLOBAL] Toutes les fonctions globales exposées AVANT DOMContentLoaded');
+
 // Application modulaire sécurisée
 let motiveMeApp;
 

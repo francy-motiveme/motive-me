@@ -64,12 +64,10 @@ export class AuthManager {
                 }
             } else {
                 console.log('⚠️ Aucune session active trouvée');
-                // CORRECTION CRITIQUE: Notifier qu'aucune session n'est active
                 this.notifyAuthListeners('NO_SESSION', null);
             }
         } catch (error) {
             console.error('❌ Erreur vérification session:', error);
-            // Notifier l'erreur aussi
             this.notifyAuthListeners('NO_SESSION', null);
         }
     }
@@ -108,7 +106,14 @@ export class AuthManager {
                 return { success: false, error: signUpResult.error };
             }
 
+            // CORRECTION CRITIQUE: Charger le profil ET notifier SIGNED_IN
             await this.loadUserProfile(signUpResult.data.user);
+            
+            // S'assurer que SIGNED_IN est bien notifié
+            if (this.currentUser) {
+                console.log('✅ [AUTH] Notification SIGNED_IN après inscription:', this.currentUser.email);
+                this.notifyAuthListeners('SIGNED_IN', this.currentUser);
+            }
 
             return {
                 success: true,

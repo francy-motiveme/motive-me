@@ -12,6 +12,30 @@ describe('Flux d\'inscription corrigé', () => {
     let mockApp;
 
     beforeEach(() => {
+        // Mock global window et document si nécessaire
+        if (typeof window === 'undefined') {
+            global.window = {
+                localStorage: {
+                    getItem: jest.fn(),
+                    setItem: jest.fn(),
+                    removeItem: jest.fn()
+                }
+            };
+        }
+        
+        if (typeof document === 'undefined') {
+            global.document = {
+                body: { innerHTML: '' },
+                getElementById: jest.fn(),
+                querySelectorAll: jest.fn(() => []),
+                createElement: jest.fn(() => ({
+                    addEventListener: jest.fn(),
+                    classList: { add: jest.fn(), remove: jest.fn() },
+                    style: {}
+                }))
+            };
+        }
+
         // Mock database
         mockDatabase = {
             signUp: jest.fn(),
@@ -23,7 +47,9 @@ describe('Flux d\'inscription corrigé', () => {
         mockAuthManager = {
             signUp: jest.fn(),
             getCurrentUser: jest.fn(),
-            isAuthenticated: jest.fn()
+            isAuthenticated: jest.fn(),
+            addAuthListener: jest.fn(),
+            notifyAuthListeners: jest.fn()
         };
 
         // Mock app
@@ -34,15 +60,18 @@ describe('Flux d\'inscription corrigé', () => {
         };
 
         // Setup DOM
-        document.body.innerHTML = `
-            <div id="signupScreen">
-                <input id="signupName" value="Nicolas" />
-                <input id="signupEmail" value="nicolas@test.com" />
-                <input id="signupPassword" value="password123" />
-                <button id="signupBtn">S'inscrire</button>
-            </div>
-            <div id="dashboardScreen"></div>
-        `;
+        if (typeof document !== 'undefined' && document.body) {
+            document.body.innerHTML = `
+                <div id="signupScreen" class="screen">
+                    <input id="signupName" value="Nicolas" />
+                    <input id="signupEmail" value="nicolas@test.com" />
+                    <input id="signupPassword" value="password123" />
+                    <button id="signupBtn">S'inscrire</button>
+                </div>
+                <div id="dashboardScreen" class="screen"></div>
+                <div id="welcomeScreen" class="screen active"></div>
+            `;
+        }
     });
 
     test('L\'inscription doit réussir et activer auto-login', async () => {
