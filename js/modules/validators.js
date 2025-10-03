@@ -25,7 +25,7 @@ export class Validators {
             return { valid: false, message: 'Mot de passe requis' };
         }
 
-        // Longueur minimale réduite à 6
+        // Longueur minimale réduite à 6 (très permissif)
         if (password.length < 6) {
             return { valid: false, message: 'Le mot de passe doit contenir au moins 6 caractères' };
         }
@@ -35,18 +35,7 @@ export class Validators {
             return { valid: false, message: 'Le mot de passe est trop long (max 128 caractères)' };
         }
 
-        // Au moins une lettre (majuscule OU minuscule)
-        if (!/[a-zA-Z]/.test(password)) {
-            return { valid: false, message: 'Le mot de passe doit contenir au moins une lettre' };
-        }
-
-        // Au moins un chiffre
-        if (!/\d/.test(password)) {
-            return { valid: false, message: 'Le mot de passe doit contenir au moins un chiffre' };
-        }
-
-        // Caractères spéciaux optionnels (on ne les oblige plus)
-
+        // Plus aucune exigence de format - juste la longueur
         return { valid: true, value: password };
     }
 

@@ -44,9 +44,12 @@ class Database {
         }
 
         try {
+            const healthUrl = `${API_BASE_URL.replace('/api', '')}/api/health`;
+            
             const response = await Promise.race([
-                fetch(`${API_BASE_URL.replace('/api', '')}/api/health`, {
-                    credentials: 'include'
+                fetch(healthUrl, {
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
                 }),
                 new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Timeout')), this.connectionTimeout)
@@ -54,7 +57,13 @@ class Database {
             ]);
 
             if (!response.ok) {
-                throw new Error('API non disponible');
+                throw new Error(`API non disponible (HTTP ${response.status})`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status !== 'ok') {
+                throw new Error('API health check failed');
             }
 
             this.client = { connected: true };
@@ -66,15 +75,17 @@ class Database {
             return { success: true, message: 'Connexion réussie' };
 
         } catch (error) {
-            console.error('❌ Erreur connexion database:', error);
+            console.error('❌ Erreur connexion database:', error.message || error);
 
             this.retryCount++;
             if (this.retryCount < this.maxRetries) {
-                console.log(`🔄 Tentative ${this.retryCount}/${this.maxRetries}`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const delay = this.retryCount * 1000;
+                console.log(`🔄 Tentative ${this.retryCount}/${this.maxRetries} dans ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
                 return this.connect();
             }
 
+            console.warn('⚠️ Échec connexion après 3 tentatives, activation mode dégradé');
             return this.activateFallbackMode();
         }
     }
@@ -106,20 +117,37 @@ class Database {
 
         try {
             const response = await fetch(url, { ...defaultOptions, ...options });
-            const data = await response.json();
+            
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error('❌ Erreur parsing JSON:', jsonError);
+                data = { error: 'Invalid JSON response' };
+            }
 
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
                     this.currentSession = null;
                     this.authEmitter.emit('SIGNED_OUT', null);
                 }
-                throw new Error(data.error || `HTTP ${response.status}`);
+                
+                const errorMsg = data.error || `HTTP ${response.status}`;
+                console.error(`❌ Fetch error [${endpoint}]: ${errorMsg}`);
+                throw new Error(errorMsg);
             }
 
             return { success: true, response, data };
         } catch (error) {
-            console.error(`❌ Fetch error [${endpoint}]:`, error);
-            return { success: false, error: error.message };
+            const errorMessage = error.message || 'Network error';
+            console.error(`❌ Fetch error [${endpoint}]:`, errorMessage);
+            
+            // Si mode dégradé n'est pas encore activé et qu'on a une erreur réseau
+            if (!this.fallbackMode && errorMessage.includes('Failed to fetch')) {
+                console.warn('⚠️ Erreur réseau détectée, passage en mode dégradé possible');
+            }
+            
+            return { success: false, error: errorMessage };
         }
     }
 

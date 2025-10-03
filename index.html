@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotiveMe - Atteins tes objectifs avec la pression sociale</title>
-    
+
     <!-- PWA Configuration -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4f46e5">
@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="MotiveMe">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-    
+
     <!-- SEO et partage social -->
     <meta name="description" content="Atteins tes objectifs avec la pression sociale et les témoins. Créé des challenges, fais tes check-ins quotidiens et reste motivé !">
     <meta name="keywords" content="motivation, objectifs, challenges, productivité, habitudes">
@@ -21,7 +21,7 @@
     <meta property="og:image" content="/icons/icon-512x512.png">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    
+
     <!-- EmailJS SDK -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
@@ -652,7 +652,7 @@
             <div class="welcome-hero">
                 <h2>🎯 MotiveMe</h2>
                 <p>Atteins tes objectifs avec la pression sociale</p>
-                
+
                 <ul class="feature-list">
                     <li>Crée des challenges personnalisés</li>
                     <li>Désigne un témoin pour te motiver</li>
@@ -678,21 +678,21 @@
         <!-- Écran de connexion -->
         <div class="screen" id="loginScreen">
             <h2 style="text-align: center; margin-bottom: 30px;">Bienvenue ! 👋</h2>
-            
+
             <form id="loginForm" onsubmit="return handleLogin(event)">
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" id="loginEmail" placeholder="ton@email.com" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Mot de passe</label>
                     <input type="password" id="loginPassword" placeholder="••••••••" required>
                 </div>
-                
+
                 <button type="submit" id="loginBtn">Se connecter</button>
             </form>
-            
+
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Pas encore de compte ? 
                 <a href="#" onclick="showScreen('signupScreen')" style="color: var(--primary);">S'inscrire</a>
@@ -702,26 +702,26 @@
         <!-- Écran d'inscription -->
         <div class="screen" id="signupScreen">
             <h2 style="text-align: center; margin-bottom: 30px;">Créer ton compte 🚀</h2>
-            
+
             <form id="signupForm" onsubmit="return handleSignup(event)">
                 <div class="form-group">
                     <label>Prénom</label>
                     <input type="text" id="signupName" placeholder="Nicolas" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" id="signupEmail" placeholder="ton@email.com" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Mot de passe</label>
                     <input type="password" id="signupPassword" placeholder="••••••••" required>
                 </div>
-                
+
                 <button type="submit" id="signupBtn">Créer mon compte</button>
             </form>
-            
+
             <p style="text-align: center; margin-top: 20px; color: #6b7280;">
                 Déjà un compte ? 
                 <a href="#" onclick="showScreen('loginScreen')" style="color: var(--primary);">Se connecter</a>
@@ -796,7 +796,7 @@
             <!-- Onglet Profil -->
             <div id="profileTab" style="display: none;">
                 <h3>Mon profil</h3>
-                
+
                 <div class="stat-card" style="margin: 20px 0;">
                     <h4 id="profileName"></h4>
                     <p id="profileEmail" style="color: #6b7280; margin-top: 5px;"></p>
@@ -822,7 +822,7 @@
         <!-- Écran création de challenge -->
         <div class="screen" id="createChallengeScreen">
             <h2 style="margin-bottom: 20px;">Nouveau Challenge 🎯</h2>
-            
+
             <div class="form-group">
                 <label>Quel est ton objectif ?</label>
                 <input type="text" id="challengeTitle" placeholder="Ex: Lire 30 min par jour">
@@ -899,7 +899,7 @@
         <!-- Écran détail d'un challenge -->
         <div class="screen" id="challengeDetailScreen">
             <h2 id="detailTitle"></h2>
-            
+
             <div class="witness-card">
                 <p>👀 Témoin : <strong id="detailWitness"></strong></p>
                 <p style="margin-top: 5px;">🎪 Gage : <strong id="detailGage"></strong></p>
@@ -1000,29 +1000,29 @@
     <div class="modal" id="signupModal">
         <div class="modal-content">
             <button class="modal-close" onclick="hideSignupModal()">×</button>
-            
+
             <h2 style="text-align: center; margin-bottom: 15px;">🎯 Sauvegarde ton challenge</h2>
             <p style="text-align: center; color: #6b7280; margin-bottom: 25px;">
                 Pour sauvegarder ton challenge, crée ton compte gratuitement en 30 secondes
             </p>
-            
+
             <div class="form-group">
                 <label>Prénom</label>
                 <input type="text" id="modalSignupName" placeholder="Nicolas" required>
             </div>
-            
+
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" id="modalSignupEmail" placeholder="ton@email.com" required>
             </div>
-            
+
             <div class="form-group">
                 <label>Mot de passe</label>
                 <input type="password" id="modalSignupPassword" placeholder="••••••••" required>
             </div>
-            
+
             <button onclick="signupFromModal()" id="modalSignupBtn">Créer mon compte et sauvegarder</button>
-            
+
             <p style="text-align: center; margin-top: 15px; color: #6b7280; font-size: 14px;">
                 Déjà un compte ? 
                 <a href="#" onclick="hideSignupModal(); showScreen('loginScreen');" style="color: var(--primary);">Se connecter</a>
@@ -1032,7 +1032,20 @@
 
     <!-- Application modulaire sécurisée -->
     <script type="module" src="/js/app.js"></script>
-    
+    <script>
+        // Exposer showScreen globalement pour les onclick inline
+        window.showScreen = function(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                console.log('📱 Changement écran:', screenId);
+            }
+        };
+    </script>
+
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
@@ -1040,7 +1053,7 @@
                 try {
                     const registration = await navigator.serviceWorker.register('/sw.js');
                     console.log('✅ Service Worker registered:', registration);
-                    
+
                     // Gérer les mises à jour
                     registration.addEventListener('updatefound', () => {
                         const newWorker = registration.installing;
@@ -1057,19 +1070,19 @@
                     console.error('❌ Service Worker registration failed:', error);
                 }
             });
-            
+
             // Écouter les messages du service worker
             navigator.serviceWorker.addEventListener('message', (event) => {
                 console.log('💬 Message from SW:', event.data);
             });
         }
-        
+
         // Détection d'installation PWA
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
+
             // Afficher un bouton d'installation personnalisé après 30 secondes
             setTimeout(() => {
                 if (deferredPrompt && window.uiManager) {

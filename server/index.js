@@ -53,7 +53,7 @@ app.use(session({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 15,
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -67,8 +67,7 @@ function isValidEmail(email) {
 function isValidPassword(password) {
   if (!password || typeof password !== 'string') return false;
   if (password.length < 6 || password.length > 128) return false;
-  if (!/[a-zA-Z]/.test(password)) return false; // Au moins une lettre
-  if (!/\d/.test(password)) return false; // Au moins un chiffre
+  // Plus aucune exigence de format - juste la longueur
   return true;
 }
 
@@ -98,7 +97,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
     if (!isValidPassword(password)) {
       return res.status(400).json({ 
-        error: 'Le mot de passe doit contenir au moins 6 caractères, une lettre et un chiffre'
+        error: 'Le mot de passe doit contenir au moins 6 caractères'
       });
     }
 

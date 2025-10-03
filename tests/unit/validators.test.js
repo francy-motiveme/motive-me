@@ -43,40 +43,37 @@ describe('Validators Module', () => {
     });
 
     describe('validatePassword', () => {
+        test('devrait accepter un mot de passe de 6 caractères', () => {
+            const result = Validators.validatePassword('abc123');
+            expect(result.valid).toBe(true);
+        });
+
+        test('devrait accepter un mot de passe simple', () => {
+            const result = Validators.validatePassword('simple');
+            expect(result.valid).toBe(true);
+        });
+
+        test('devrait accepter un mot de passe avec seulement des chiffres', () => {
+            const result = Validators.validatePassword('123456');
+            expect(result.valid).toBe(true);
+        });
+
         test('devrait accepter un mot de passe fort', () => {
             const result = Validators.validatePassword('StrongPass123!');
             expect(result.valid).toBe(true);
-            expect(result.message).toBe('');
         });
 
         test('devrait rejeter un mot de passe trop court', () => {
-            const result = Validators.validatePassword('Abc1!');
+            const result = Validators.validatePassword('abc12');
             expect(result.valid).toBe(false);
-            expect(result.message).toContain('8 caractères');
+            expect(result.message).toContain('6 caractères');
         });
 
-        test('devrait rejeter un mot de passe sans majuscule', () => {
-            const result = Validators.validatePassword('password123!');
+        test('devrait rejeter un mot de passe trop long', () => {
+            const longPassword = 'a'.repeat(129);
+            const result = Validators.validatePassword(longPassword);
             expect(result.valid).toBe(false);
-            expect(result.message).toContain('majuscule');
-        });
-
-        test('devrait rejeter un mot de passe sans minuscule', () => {
-            const result = Validators.validatePassword('PASSWORD123!');
-            expect(result.valid).toBe(false);
-            expect(result.message).toContain('minuscule');
-        });
-
-        test('devrait rejeter un mot de passe sans chiffre', () => {
-            const result = Validators.validatePassword('Password!');
-            expect(result.valid).toBe(false);
-            expect(result.message).toContain('chiffre');
-        });
-
-        test('devrait rejeter un mot de passe sans caractère spécial', () => {
-            const result = Validators.validatePassword('Password123');
-            expect(result.valid).toBe(false);
-            expect(result.message).toContain('spécial');
+            expect(result.message).toContain('128 caractères');
         });
 
         test('devrait rejeter un mot de passe vide', () => {

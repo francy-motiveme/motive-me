@@ -333,8 +333,25 @@ async function removeStoredCheckin(id) {
 }
 
 async function sendCheckin(checkin) {
-  // Simulation - à implémenter avec API Supabase
-  console.log('Sending check-in:', checkin);
+  try {
+    const response = await fetch('/api/check-ins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(checkin)
+    });
+    
+    if (response.ok) {
+      console.log('✅ Check-in envoyé:', checkin);
+      return true;
+    }
+    
+    console.error('❌ Erreur envoi check-in');
+    return false;
+  } catch (error) {
+    console.error('❌ Erreur réseau:', error);
+    return false;
+  }
 }
 
 // ========== MESSAGES VERS L'APPLICATION ==========
