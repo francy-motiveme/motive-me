@@ -89,31 +89,47 @@ class MotiveMeApp {
             return false;
         };
         
-        // Gestion des écrans
+        // Gestion des écrans - FONCTION GLOBALE CRITIQUE
         window.showScreen = (screenId) => {
+            console.log('🔄 showScreen appelé:', screenId);
+            
+            // Masquer tous les écrans
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
+            
+            // Afficher l'écran demandé
             const targetScreen = document.getElementById(screenId);
             if (targetScreen) {
                 targetScreen.classList.add('active');
-                console.log('📱 Changement écran:', screenId);
+                console.log('✅ Écran affiché:', screenId);
+            } else {
+                console.error('❌ Écran non trouvé:', screenId);
             }
         };
         
         // Fonctions de challenge
-        window.createChallenge = () => this.createChallenge();
+        window.createChallenge = () => {
+            console.log('🎯 createChallenge appelé');
+            return this.createChallenge();
+        };
         window.checkIn = () => this.checkIn();
         window.viewChallenge = (id) => this.viewChallenge(id);
         window.uploadProof = () => this.uploadProof();
         
         // Gestion des onglets
-        window.switchTab = (tab) => this.switchTab(tab);
+        window.switchTab = (tab) => {
+            console.log('📑 switchTab appelé:', tab);
+            return this.switchTab(tab);
+        };
         
         // Fonctions de formulaire challenge
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
-        window.selectGage = (element, gage) => this.selectGage(element, gage);
+        window.selectGage = (element, gage) => {
+            console.log('🎪 selectGage appelé:', gage);
+            return this.selectGage(element, gage);
+        };
         
         // Badges
         window.loadRecentBadges = () => this.loadRecentBadges();
@@ -216,24 +232,38 @@ class MotiveMeApp {
         const email = document.getElementById('signupEmail').value;
         const password = document.getElementById('signupPassword').value;
 
+        console.log('🔄 Début inscription:', { name, email });
+
         setLoading('signupBtn', true, 'Création...');
 
         try {
             const result = await authManager.signUp({ name, email, password });
 
+            console.log('📊 Résultat inscription:', result);
+
             if (result.success) {
                 showNotification(result.message);
                 
+                // Si auto-login, handleAuthChange() va gérer la navigation
+                // Sinon, rediriger vers login avec email pré-rempli
                 if (!result.autoLogin) {
-                    showScreen('loginScreen');
-                    document.getElementById('loginEmail').value = email;
+                    console.log('🔄 Pas d\'auto-login, redirection vers login');
+                    window.showScreen('loginScreen');
+                    const loginEmailInput = document.getElementById('loginEmail');
+                    if (loginEmailInput) {
+                        loginEmailInput.value = email;
+                    }
+                } else {
+                    console.log('✅ Auto-login activé, attente handleAuthChange');
                 }
                 
+                // Vérifier challenge temporaire
                 const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
                 if (tempChallenge) {
                     console.log('📦 Challenge temporaire trouvé, sera créé après connexion');
                 }
             } else {
+                console.error('❌ Échec inscription:', result.error);
                 showNotification(result.error, 'error');
             }
         } catch (error) {

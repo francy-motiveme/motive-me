@@ -338,21 +338,32 @@ describe('Validators Module', () => {
             });
         });
 
-        describe('checkRateLimit - Nouvelle limite 20 tentatives', () => {
-            test('autorise 20 tentatives', () => {
-                for (let i = 0; i < 20; i++) {
-                    const result = Validators.checkRateLimit('test_key', 20);
+        describe('checkRateLimit - Nouvelle limite 30 tentatives', () => {
+            test('autorise 30 tentatives', () => {
+                for (let i = 0; i < 30; i++) {
+                    const result = Validators.checkRateLimit('test_key_30', 30);
                     expect(result.allowed).toBe(true);
                 }
             });
 
-            test('bloque à la 21ème tentative', () => {
-                for (let i = 0; i < 20; i++) {
-                    Validators.checkRateLimit('test_key', 20);
+            test('bloque à la 31ème tentative', () => {
+                for (let i = 0; i < 30; i++) {
+                    Validators.checkRateLimit('test_key_31', 30);
                 }
-                const result = Validators.checkRateLimit('test_key', 20);
+                const result = Validators.checkRateLimit('test_key_31', 30);
                 expect(result.allowed).toBe(false);
                 expect(result.message).toContain('Trop de tentatives');
+            });
+
+            test('accepte mot de passe 4 caractères', () => {
+                const result = Validators.validatePassword('test');
+                expect(result.valid).toBe(true);
+            });
+
+            test('rejette mot de passe 3 caractères', () => {
+                const result = Validators.validatePassword('abc');
+                expect(result.valid).toBe(false);
+                expect(result.message).toContain('4 caractères');
             });
 
             test('réinitialise après la fenêtre de temps', () => {

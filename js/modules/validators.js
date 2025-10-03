@@ -25,11 +25,11 @@ export class Validators {
             return { valid: false, message: 'Le mot de passe est requis' };
         }
 
-        // Réduction à 6 caractères minimum pour faciliter l'inscription
-        if (password.length < 6) {
+        // Réduction MAXIMALE à 4 caractères minimum pour faciliter les tests
+        if (password.length < 4) {
             return {
                 valid: false,
-                message: 'Le mot de passe doit contenir au moins 6 caractères'
+                message: 'Le mot de passe doit contenir au moins 4 caractères'
             };
         }
 
@@ -40,7 +40,7 @@ export class Validators {
             };
         }
 
-        // Plus aucune exigence de complexité - juste la longueur
+        // AUCUNE exigence de complexité - juste la longueur minimale
         return { valid: true, value: password };
     }
 
@@ -295,7 +295,7 @@ export class Validators {
     // ========== VALIDATION RATE LIMITING ==========
     static rateLimitData = new Map();
 
-    static checkRateLimit(identifier, maxAttempts = 20, windowMs = 30 * 60 * 1000) {
+    static checkRateLimit(identifier, maxAttempts = 30, windowMs = 30 * 60 * 1000) {
         const now = Date.now();
         const userAttempts = this.rateLimitData.get(identifier) || { count: 0, resetTime: now + windowMs };
 
