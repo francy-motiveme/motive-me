@@ -1035,8 +1035,10 @@
         // Fonctions globales de base
         window.showScreen = function(screenId) {
             console.log('🔄 Changement écran:', screenId);
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screen = document.getElementById(screenId);
+            document.querySelectorAll('.screen').forEach(function(s) {
+                s.classList.remove('active');
+            });
+            var screen = document.getElementById(screenId);
             if (screen) screen.classList.add('active');
         };
         
@@ -1045,7 +1047,9 @@
         };
         
         window.selectGage = function(element, gage) {
-            document.querySelectorAll('.gage-option').forEach(o => o.classList.remove('selected'));
+            document.querySelectorAll('.gage-option').forEach(function(o) {
+                o.classList.remove('selected');
+            });
             element.classList.add('selected');
         };
         

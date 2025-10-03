@@ -244,19 +244,10 @@ class MotiveMeApp {
             if (result.success) {
                 showNotification(result.message);
 
-                // Si auto-login, handleAuthChange() va gérer la navigation
-                // Sinon, rediriger vers login avec email pré-rempli
-                if (!result.autoLogin) {
-                    console.log('🔄 Pas d\'auto-login, redirection vers login');
-                    window.showScreen('loginScreen');
-                    const loginEmailInput = document.getElementById('loginEmail');
-                    if (loginEmailInput) {
-                        loginEmailInput.value = email;
-                    }
-                } else {
-                    console.log('✅ Auto-login activé, attente handleAuthChange');
-                }
-
+                // L'utilisateur est maintenant connecté (autoLogin: true)
+                // handleAuthChange va se déclencher et gérer le reste
+                console.log('✅ Inscription réussie, utilisateur connecté');
+                
                 // Vérifier challenge temporaire
                 const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
                 if (tempChallenge) {
@@ -810,11 +801,9 @@ class MotiveMeApp {
                 // Fermer la modal
                 this.hideSignupModal();
 
-                // Afficher écran de connexion avec email pré-rempli
-                showScreen('loginScreen');
-                document.getElementById('loginEmail').value = email;
-
-                showNotification('Connecte-toi pour créer ton challenge !', 'info');
+                // L'utilisateur est connecté automatiquement
+                // handleAuthChange va gérer la navigation vers le dashboard
+                console.log('✅ Inscription depuis modal réussie, redirection auto vers dashboard');
             } else {
                 showNotification(result.error, 'error');
             }
@@ -1052,18 +1041,19 @@ class MotiveMeApp {
 
 // ========== INITIALISATION GLOBALE ==========
 // Application modulaire sécurisée
+let motiveMeApp;
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        const motiveMeApp = new MotiveMeApp();
+        motiveMeApp = new MotiveMeApp();
+        window.motiveMeApp = motiveMeApp;
         motiveMeApp.init();
     });
 } else {
-    const motiveMeApp = new MotiveMeApp();
+    motiveMeApp = new MotiveMeApp();
+    window.motiveMeApp = motiveMeApp;
     motiveMeApp.init();
 }
-
-// Exposer l'app globalement pour debug
-window.motiveMeApp = motiveMeApp;
 
 // Fonction de déconnexion
 async function signOut() {
