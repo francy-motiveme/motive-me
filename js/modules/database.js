@@ -1,3 +1,4 @@
+replit_final_file>
 // Base de données - Interface Express API Backend
 const API_BASE_URL = `http://${window.location.hostname}:3000/api`;
 
@@ -94,7 +95,7 @@ class Database {
 
     async _fetch(endpoint, options = {}) {
         const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-        
+
         const defaultOptions = {
             credentials: 'include',
             headers: {
@@ -135,6 +136,8 @@ class Database {
 
             const { user, session } = result.data;
             this.currentSession = session;
+
+            console.log('✅ Signup successful for:', user.email);
 
             setTimeout(() => {
                 this.authEmitter.emit('SIGNED_IN', { user, session });
@@ -205,7 +208,7 @@ class Database {
             }
 
             const { session, user } = result.data;
-            
+
             if (session && user) {
                 this.currentSession = { ...session, user };
                 return { success: true, session: this.currentSession };
@@ -476,3 +479,4 @@ const database = new Database();
 
 export default database;
 export { Database };
+</replit_final_file>

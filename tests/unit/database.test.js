@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-// Mock fetch pour simuler les appels API Express
+// Mock fetch to simulate Express API calls
 global.fetch = jest.fn();
 
 const { Database } = await import('../../js/modules/database.js');

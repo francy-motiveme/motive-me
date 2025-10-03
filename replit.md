@@ -21,14 +21,9 @@ The application follows a modular Single Page Application (SPA) architecture usi
 The architecture uses ES6 imports/exports for dependency management and follows a publish-subscribe pattern for inter-module communication. State is managed locally within modules and synchronized through the database layer.
 
 ### Backend Architecture
-The application uses Express.js as a backend server with PostgreSQL database, providing:
-
-- **Database**: PostgreSQL database with manual authorization checks in Express middleware
-- **Authentication**: Custom Express session-based auth with bcrypt password hashing
-- **API**: RESTful API endpoints for all CRUD operations
-- **Security**: CSRF protection, rate limiting, input validation and sanitization
-
-The database interface is abstracted through a centralized `database.js` module that handles all API calls, error handling, and response normalization.
+The application uses Express.js as a custom API backend, providing:
+- **Database**: PostgreSQL (Replit/Neon) with automatic table initialization
+- **Authentication**: Session-based auth with bcrypt password hashing and express-session
 
 ### Data Storage Solutions
 **Primary Database**: PostgreSQL (Replit-hosted) with the following key tables:
@@ -86,15 +81,10 @@ The application is configured as a PWA with:
 
 ### Environment Configuration
 The application uses environment variables managed through Replit Secrets:
-- `DATABASE_URL`: PostgreSQL connection string
-- `SESSION_SECRET`: Encryption key for session security
-- `SMTP_HOST`: Email server hostname (optional)
-- `SMTP_PORT`: Email server port (optional)
-- `SMTP_USER`: Email server username (optional)
-- `SMTP_PASSWORD`: Email server password (optional)
-- `APP_URL`: Application public URL for email links
-- `VITE_EMAILJS_PUBLIC_KEY`: EmailJS public key (optional, frontend)
-- `VITE_EMAILJS_SERVICE_ID`: EmailJS service ID (optional, frontend)
+Required environment variables:
+- `DATABASE_URL`: PostgreSQL connection string (auto-configured by Replit)
+- `SESSION_SECRET`: Secret key for session encryption (generated automatically if missing)
+- `NODE_ENV`: Environment mode (development/production)
 
 The build system (Vite) handles environment variable injection and provides hot module replacement for development, with production optimization including code splitting and asset optimization.
 
