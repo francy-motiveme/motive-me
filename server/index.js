@@ -5,7 +5,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
-import { query, initializeAuthTable } from './db.js';
+import { query, initializeDatabase } from './db.js';
 import { requireAuth, getUserFromSession } from './middleware/auth.js';
 
 const app = express();
@@ -59,6 +59,33 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+function isValidEmail(email) {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return email && typeof email === 'string' && email.length <= 254 && emailRegex.test(email);
+}
+
+function isValidPassword(password) {
+  if (!password || typeof password !== 'string') return false;
+  if (password.length < 8 || password.length > 128) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[a-z]/.test(password)) return false;
+  if (!/\d/.test(password)) return false;
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
+  return true;
+}
+
+function sanitizeHtml(input) {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .substring(0, 1000);
+}
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'MotiveMe API is running' });
 });
@@ -67,24 +94,21 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
   try {
     const { email, password, metadata = {} } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Format email invalide (ex: nom@domaine.com)' });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (!isValidPassword(password)) {
       return res.status(400).json({ 
-        error: 'Password must contain at least 8 characters, 1 uppercase letter, 1 lowercase letter, and 1 number' 
+        error: 'Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial'
       });
     }
 
+    const sanitizedName = sanitizeHtml(metadata.name || email.split('@')[0]);
+    
     const existingAuth = await query(
       'SELECT * FROM auth_credentials WHERE email = $1',
-      [email]
+      [email.toLowerCase().trim()]
     );
 
     if (existingAuth.rows.length > 0) {
@@ -97,37 +121,47 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
       `INSERT INTO users (email, name, points, badges, preferences, stats)
        VALUES ($1, $2, 0, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb)
        RETURNING *`,
-      [email, metadata.name || email.split('@')[0]]
+      [email.toLowerCase().trim(), sanitizedName]
     );
 
     const user = userResult.rows[0];
 
     await query(
-      'INSERT INTO auth_credentials (user_id, email, password_hash) VALUES ($1, $2, $3)',
-      [user.id, email, passwordHash]
+      `INSERT INTO auth_credentials (user_id, email, password_hash, email_verified) 
+       VALUES ($1, $2, $3, false)`,
+      [user.id, email.toLowerCase().trim(), passwordHash]
     );
 
     req.session.userId = user.id;
     req.session.userEmail = user.email;
 
     res.status(201).json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        user_metadata: metadata
-      },
-      session: {
-        access_token: 'session-based-auth',
+      success: true,
+      data: {
         user: {
           id: user.id,
-          email: user.email
+          email: user.email,
+          name: user.name,
+          points: user.points,
+          badges: user.badges,
+          preferences: user.preferences,
+          stats: user.stats,
+          user_metadata: metadata
+        },
+        session: {
+          access_token: 'session-based-auth',
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name
+          }
         }
-      }
+      },
+      message: `Bienvenue ${sanitizedName} ! Ton compte a été créé avec succès.`
     });
   } catch (error) {
     console.error('❌ Signup error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -135,13 +169,17 @@ app.post('/api/auth/signin', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Format email invalide' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Mot de passe requis' });
     }
 
     const authResult = await query(
       'SELECT * FROM auth_credentials WHERE email = $1',
-      [email]
+      [email.toLowerCase().trim()]
     );
 
     if (authResult.rows.length === 0) {
@@ -166,409 +204,297 @@ app.post('/api/auth/signin', authLimiter, async (req, res) => {
     req.session.userEmail = user.email;
 
     res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
-      },
-      session: {
-        access_token: 'session-based-auth',
+      success: true,
+      data: {
         user: {
           id: user.id,
-          email: user.email
+          email: user.email,
+          name: user.name,
+          points: user.points,
+          badges: user.badges,
+          preferences: user.preferences,
+          stats: user.stats
+        },
+        session: {
+          access_token: 'session-based-auth',
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name
+          }
         }
-      }
+      },
+      message: `Bienvenue ${user.name} !`
     });
   } catch (error) {
-    console.error('❌ Signin error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Sign in error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 app.post('/api/auth/signout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      console.error('❌ Signout error:', err);
-      return res.status(500).json({ error: 'Failed to sign out' });
+      return res.status(500).json({ success: false, error: 'Failed to sign out' });
     }
     res.clearCookie('connect.sid');
-    res.json({ message: 'Signed out successfully' });
+    res.json({ success: true, message: 'Signed out successfully' });
   });
 });
 
-app.get('/api/auth/session', (req, res) => {
-  if (!req.session || !req.session.userId) {
-    return res.json({ session: null, user: null });
-  }
-
-  res.json({
-    session: {
-      access_token: 'session-based-auth',
-      user: {
-        id: req.session.userId,
-        email: req.session.userEmail
-      }
-    },
-    user: {
-      id: req.session.userId,
-      email: req.session.userEmail
+app.get('/api/auth/session', async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.json({ success: true, session: null, user: null });
     }
-  });
+    
+    const userResult = await query(
+      'SELECT * FROM users WHERE id = $1',
+      [req.session.userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.json({ success: true, session: null, user: null });
+    }
+    
+    const user = userResult.rows[0];
+    
+    res.json({
+      success: true,
+      data: {
+        session: {
+          access_token: 'session-based-auth',
+          user: user
+        },
+        user: user
+      }
+    });
+  } catch (error) {
+    console.error('❌ Session error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.get('/api/users/:id', requireAuth, async (req, res) => {
   try {
     const userId = req.params.id;
-
+    
     if (req.session.userId !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
-    const result = await query(
-      'SELECT * FROM users WHERE id = $1',
-      [userId]
-    );
-
+    
+    const result = await query('SELECT * FROM users WHERE id = $1', [userId]);
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    res.json({ data: result.rows[0] });
+    
+    res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Get user error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.patch('/api/users/:id', requireAuth, async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    if (req.session.userId !== userId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const updates = req.body;
-
-    if (updates.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(updates.email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
-    }
-
-    if (updates.phone) {
-      const phoneRegex = /^\+?[\d\s\-()]{8,}$/;
-      if (!phoneRegex.test(updates.phone)) {
-        return res.status(400).json({ error: 'Invalid phone number format' });
-      }
-    }
-
-    const allowedFields = ['name', 'first_name', 'last_name', 'phone', 'points', 'badges', 'preferences', 'stats'];
-    const setClauses = [];
-    const values = [];
-    let paramIndex = 1;
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (allowedFields.includes(key)) {
-        setClauses.push(`${key} = $${paramIndex}`);
-        values.push(typeof value === 'object' ? JSON.stringify(value) : value);
-        paramIndex++;
-      }
-    }
-
-    if (setClauses.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    values.push(userId);
-    const updateQuery = `
-      UPDATE users 
-      SET ${setClauses.join(', ')}, updated_at = NOW()
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
-
-    const result = await query(updateQuery, values);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ data: result.rows[0] });
-  } catch (error) {
-    console.error('❌ Update user error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/challenges', requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    
-    const result = await query(
-      'SELECT * FROM challenges WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
-    );
-
-    res.json({ data: result.rows });
-  } catch (error) {
-    console.error('❌ Get challenges error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 app.post('/api/challenges', requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId;
     const {
+      user_id,
       title,
       duration,
       frequency,
       custom_days,
       witness_email,
       gage,
-      status,
       start_date,
       end_date,
+      occurrences,
       timezone,
-      reminder_time
+      reminder_time,
+      metadata
     } = req.body;
 
-    if (!title || !duration || !witness_email || !gage) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (req.session.userId !== user_id) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
+
+    const sanitizedTitle = sanitizeHtml(title);
+    const sanitizedGage = sanitizeHtml(gage);
 
     const result = await query(
       `INSERT INTO challenges (
         user_id, title, duration, frequency, custom_days, witness_email, gage,
-        status, start_date, end_date, timezone, reminder_time
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        status, start_date, end_date, occurrences, timezone, reminder_time,
+        completion_rate, current_streak, points_earned, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, $9, $10, $11, $12, 0, 0, 0, $13)
       RETURNING *`,
       [
-        userId,
-        title,
-        duration,
-        frequency || 'daily',
-        custom_days,
+        user_id, sanitizedTitle, duration, frequency,
+        JSON.stringify(custom_days || []),
         witness_email,
-        gage,
-        status || 'active',
-        start_date || new Date(),
+        sanitizedGage,
+        start_date,
         end_date,
-        timezone || 'Europe/Paris',
-        reminder_time || '09:00:00'
+        JSON.stringify(occurrences || []),
+        timezone,
+        reminder_time,
+        JSON.stringify(metadata || {})
       ]
     );
 
-    res.status(201).json({ data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Create challenge error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.patch('/api/challenges/:id', requireAuth, async (req, res) => {
+app.get('/api/challenges/user/:userId', requireAuth, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    if (req.session.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    
+    const result = await query(
+      'SELECT * FROM challenges WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('❌ Get challenges error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/challenges/:id', requireAuth, async (req, res) => {
   try {
     const challengeId = req.params.id;
-    const userId = req.session.userId;
-
-    const ownerCheck = await query(
+    const updates = req.body;
+    
+    const challengeResult = await query(
       'SELECT user_id FROM challenges WHERE id = $1',
       [challengeId]
     );
-
-    if (ownerCheck.rows.length === 0) {
+    
+    if (challengeResult.rows.length === 0) {
       return res.status(404).json({ error: 'Challenge not found' });
     }
-
-    if (ownerCheck.rows[0].user_id !== userId) {
+    
+    if (challengeResult.rows[0].user_id !== req.session.userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
-    const updates = req.body;
-    const allowedFields = [
-      'title', 'duration', 'frequency', 'custom_days', 'witness_email', 'gage',
-      'status', 'end_date', 'occurrences', 'timezone', 'reminder_time',
-      'completion_rate', 'current_streak', 'points_earned', 'metadata'
-    ];
     
-    const setClauses = [];
+    const fields = [];
     const values = [];
-    let paramIndex = 1;
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (allowedFields.includes(key)) {
-        setClauses.push(`${key} = $${paramIndex}`);
-        values.push(typeof value === 'object' ? JSON.stringify(value) : value);
-        paramIndex++;
-      }
+    let paramCount = 1;
+    
+    if (updates.title !== undefined) {
+      fields.push(`title = $${paramCount++}`);
+      values.push(sanitizeHtml(updates.title));
     }
-
-    if (setClauses.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
+    if (updates.status !== undefined) {
+      fields.push(`status = $${paramCount++}`);
+      values.push(updates.status);
     }
-
+    if (updates.occurrences !== undefined) {
+      fields.push(`occurrences = $${paramCount++}`);
+      values.push(JSON.stringify(updates.occurrences));
+    }
+    if (updates.completion_rate !== undefined) {
+      fields.push(`completion_rate = $${paramCount++}`);
+      values.push(updates.completion_rate);
+    }
+    if (updates.current_streak !== undefined) {
+      fields.push(`current_streak = $${paramCount++}`);
+      values.push(updates.current_streak);
+    }
+    if (updates.points_earned !== undefined) {
+      fields.push(`points_earned = $${paramCount++}`);
+      values.push(updates.points_earned);
+    }
+    
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    fields.push(`updated_at = NOW()`);
     values.push(challengeId);
+    
     const updateQuery = `
       UPDATE challenges 
-      SET ${setClauses.join(', ')}, updated_at = NOW()
-      WHERE id = $${paramIndex}
+      SET ${fields.join(', ')}
+      WHERE id = $${paramCount}
       RETURNING *
     `;
-
+    
     const result = await query(updateQuery, values);
-
-    res.json({ data: result.rows[0] });
+    
+    res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Update challenge error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.delete('/api/challenges/:id', requireAuth, async (req, res) => {
+app.post('/api/notifications', requireAuth, async (req, res) => {
   try {
-    const challengeId = req.params.id;
-    const userId = req.session.userId;
-
-    const ownerCheck = await query(
-      'SELECT user_id FROM challenges WHERE id = $1',
-      [challengeId]
-    );
-
-    if (ownerCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Challenge not found' });
-    }
-
-    if (ownerCheck.rows[0].user_id !== userId) {
+    const { user_id, type, title, message, metadata } = req.body;
+    
+    if (req.session.userId !== user_id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
-    await query('DELETE FROM challenges WHERE id = $1', [challengeId]);
-
-    res.json({ message: 'Challenge deleted successfully' });
-  } catch (error) {
-    console.error('❌ Delete challenge error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/check-ins', requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    const { challenge_id } = req.query;
-
-    let queryText = 'SELECT * FROM check_ins WHERE user_id = $1';
-    const params = [userId];
-
-    if (challenge_id) {
-      queryText += ' AND challenge_id = $2';
-      params.push(challenge_id);
-    }
-
-    queryText += ' ORDER BY checked_at DESC';
-
-    const result = await query(queryText, params);
-
-    res.json({ data: result.rows });
-  } catch (error) {
-    console.error('❌ Get check-ins error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/check-ins', requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    const { challenge_id, occurrence_id, notes, proof_url } = req.body;
-
-    if (!challenge_id || occurrence_id === undefined) {
-      return res.status(400).json({ error: 'challenge_id and occurrence_id are required' });
-    }
-
-    const challengeCheck = await query(
-      'SELECT user_id FROM challenges WHERE id = $1',
-      [challenge_id]
-    );
-
-    if (challengeCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Challenge not found' });
-    }
-
-    if (challengeCheck.rows[0].user_id !== userId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
+    
+    const sanitizedTitle = sanitizeHtml(title);
+    const sanitizedMessage = sanitizeHtml(message);
+    
     const result = await query(
-      `INSERT INTO check_ins (user_id, challenge_id, occurrence_id, notes, proof_url)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO notifications (user_id, type, title, message, read, metadata)
+       VALUES ($1, $2, $3, $4, false, $5)
        RETURNING *`,
-      [userId, challenge_id, occurrence_id, notes, proof_url]
+      [user_id, type, sanitizedTitle, sanitizedMessage, JSON.stringify(metadata || {})]
     );
-
-    res.status(201).json({ data: result.rows[0] });
+    
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('❌ Create check-in error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Create notification error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get('/api/notifications', requireAuth, async (req, res) => {
+app.get('/api/notifications/user/:userId', requireAuth, async (req, res) => {
   try {
-    const userId = req.session.userId;
-    const limit = parseInt(req.query.limit) || 50;
-
+    const userId = req.params.userId;
+    
+    if (req.session.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    
     const result = await query(
-      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
-      [userId, limit]
+      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+      [userId]
     );
-
-    res.json({ data: result.rows });
+    
+    res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('❌ Get notifications error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.patch('/api/notifications/:id', requireAuth, async (req, res) => {
-  try {
-    const notificationId = req.params.id;
-    const userId = req.session.userId;
-    const { read } = req.body;
-
-    const ownerCheck = await query(
-      'SELECT user_id FROM notifications WHERE id = $1',
-      [notificationId]
-    );
-
-    if (ownerCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Notification not found' });
-    }
-
-    if (ownerCheck.rows[0].user_id !== userId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const result = await query(
-      'UPDATE notifications SET read = $1 WHERE id = $2 RETURNING *',
-      [read !== undefined ? read : true, notificationId]
-    );
-
-    res.json({ data: result.rows[0] });
-  } catch (error) {
-    console.error('❌ Update notification error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 const startServer = async () => {
   try {
-    await initializeAuthTable();
-    console.log('✅ Database initialized');
-
+    console.log('🔧 Initializing database...');
+    await initializeDatabase();
+    console.log('✅ Database initialized successfully');
+    
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 MotiveMe API server running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔒 Session secret: ${sessionSecret.substring(0, 10)}...`);
+      console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
