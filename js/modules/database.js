@@ -479,4 +479,3 @@ const database = new Database();
 
 export default database;
 export { Database };
-</replit_final_file>

@@ -66,11 +66,9 @@ function isValidEmail(email) {
 
 function isValidPassword(password) {
   if (!password || typeof password !== 'string') return false;
-  if (password.length < 8 || password.length > 128) return false;
-  if (!/[A-Z]/.test(password)) return false;
-  if (!/[a-z]/.test(password)) return false;
-  if (!/\d/.test(password)) return false;
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
+  if (password.length < 6 || password.length > 128) return false;
+  if (!/[a-zA-Z]/.test(password)) return false; // Au moins une lettre
+  if (!/\d/.test(password)) return false; // Au moins un chiffre
   return true;
 }
 
@@ -100,7 +98,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
     if (!isValidPassword(password)) {
       return res.status(400).json({ 
-        error: 'Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial'
+        error: 'Le mot de passe doit contenir au moins 6 caractères, une lettre et un chiffre'
       });
     }
 

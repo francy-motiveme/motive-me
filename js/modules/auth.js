@@ -77,10 +77,10 @@ export class AuthManager {
     // ========== INSCRIPTION ==========
     async signUp(formData) {
         try {
-            // Rate limiting
+            // Rate limiting (augmentation à 10 tentatives)
             const rateLimitCheck = Validators.checkRateLimit(
                 `signup_${formData.email}`,
-                3, // 3 tentatives
+                10, // 10 tentatives
                 30 * 60 * 1000 // 30 minutes
             );
 
