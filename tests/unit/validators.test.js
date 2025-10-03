@@ -119,7 +119,7 @@ describe('Validators Module', () => {
     describe('validateChallengeDuration', () => {
         test('devrait accepter une durée valide', () => {
             const durations = [7, 14, 21, 30, 60, 90];
-            
+
             durations.forEach(duration => {
                 const result = Validators.validateChallengeDuration(duration);
                 expect(result.valid).toBe(true);
@@ -261,7 +261,7 @@ describe('Validators Module', () => {
         test('devrait nettoyer les entrées utilisateur', () => {
             const input = '  <script>alert("XSS")</script>  ';
             const sanitized = Validators.sanitizeInput(input);
-            
+
             expect(sanitized).not.toContain('<script>');
             expect(sanitized.trim()).toBe(sanitized);
         });
@@ -269,7 +269,7 @@ describe('Validators Module', () => {
         test('devrait échapper les caractères HTML dangereux', () => {
             const input = '<div>Test & "quotes"</div>';
             const escaped = Validators.escapeHtml(input);
-            
+
             expect(escaped).not.toContain('<div>');
             expect(escaped).toContain('&lt;');
             expect(escaped).toContain('&gt;');
@@ -280,7 +280,7 @@ describe('Validators Module', () => {
     describe('validateReminderTime', () => {
         test('devrait accepter un horaire valide', () => {
             const times = ['08:00', '12:30', '18:45', '23:59'];
-            
+
             times.forEach(time => {
                 const result = Validators.validateReminderTime(time);
                 expect(result.valid).toBe(true);
@@ -295,6 +295,102 @@ describe('Validators Module', () => {
         test('devrait accepter un horaire vide (optionnel)', () => {
             const result = Validators.validateReminderTime('');
             expect(result.valid).toBe(true);
+        });
+    });
+
+    // --- NOUVEAUX TESTS AJOUTÉS ---
+
+    describe('Validators - Nouvelles règles assouplies', () => {
+        beforeEach(() => {
+            localStorage.clear();
+        });
+
+        describe('validatePassword', () => {
+            test('accepte mot de passe de 6 caractères', () => {
+                const result = Validators.validatePassword('abc123');
+                expect(result.valid).toBe(true);
+            });
+
+            test('accepte mot de passe simple sans majuscule', () => {
+                const result = Validators.validatePassword('motdepasse');
+                expect(result.valid).toBe(true);
+            });
+
+            test('accepte mot de passe sans chiffre', () => {
+                const result = Validators.validatePassword('abcdef');
+                expect(result.valid).toBe(true);
+            });
+
+            test('rejette mot de passe trop court (moins de 6)', () => {
+                const result = Validators.validatePassword('abc12');
+                expect(result.valid).toBe(false);
+                expect(result.message).toContain('6 caractères');
+            });
+
+            test('rejette mot de passe trop long', () => {
+                const result = Validators.validatePassword('a'.repeat(129));
+                expect(result.valid).toBe(false);
+            });
+
+            test('rejette undefined', () => {
+                const result = Validators.validatePassword(undefined);
+                expect(result.valid).toBe(false);
+            });
+        });
+
+        describe('checkRateLimit - Nouvelle limite 20 tentatives', () => {
+            test('autorise 20 tentatives', () => {
+                for (let i = 0; i < 20; i++) {
+                    const result = Validators.checkRateLimit('test_key', 20);
+                    expect(result.allowed).toBe(true);
+                }
+            });
+
+            test('bloque à la 21ème tentative', () => {
+                for (let i = 0; i < 20; i++) {
+                    Validators.checkRateLimit('test_key', 20);
+                }
+                const result = Validators.checkRateLimit('test_key', 20);
+                expect(result.allowed).toBe(false);
+                expect(result.message).toContain('Trop de tentatives');
+            });
+
+            test('réinitialise après la fenêtre de temps', () => {
+                const shortWindow = 100; // 100ms
+                Validators.checkRateLimit('test_key', 5, shortWindow);
+
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const result = Validators.checkRateLimit('test_key', 5, shortWindow);
+                        expect(result.allowed).toBe(true);
+                        resolve();
+                    }, 150);
+                });
+            });
+        });
+
+        describe('validateSignupForm - Intégration', () => {
+            test('accepte formulaire valide avec mot de passe simple', () => {
+                const formData = {
+                    name: 'Test User',
+                    email: 'test@example.com',
+                    password: 'simple'
+                };
+                const result = Validators.validateSignupForm(formData);
+                expect(result.valid).toBe(true);
+                expect(result.data.name).toBe('Test User');
+            });
+
+            test('rejette email invalide', () => {
+                const formData = {
+                    name: 'Test',
+                    email: 'invalide',
+                    password: 'password123'
+                };
+                const result = Validators.validateSignupForm(formData);
+                expect(result.valid).toBe(false);
+                expect(result.errors[0].field).toBe('email');
+            });
         });
     });
 });

@@ -24,6 +24,9 @@ class MotiveMeApp {
         try {
             console.log('🚀 Initialisation MotiveMe...');
 
+            // Exposer les fonctions AVANT tout
+            this.exposeGlobalFunctions();
+
             // Initialiser les managers dans le bon ordre
             await Promise.all([
                 authManager.initialize(),
@@ -67,14 +70,14 @@ class MotiveMeApp {
         }
     }
 
-    // ========== GESTION UI ==========
-    initializeUI() {
-        // Exposer les fonctions globalement pour les onclick dans HTML
+    // ========== EXPOSITION DES FONCTIONS GLOBALES ==========
+    exposeGlobalFunctions() {
+        // Fonctions d'authentification
         window.login = () => this.login();
         window.signup = () => this.signup();
         window.logout = () => this.logout();
-
-        // Exposer les handlers de formulaires pour les onsubmit dans HTML
+        
+        // Handlers de formulaires
         window.handleLogin = (event) => {
             event.preventDefault();
             this.login();
@@ -85,22 +88,51 @@ class MotiveMeApp {
             this.signup();
             return false;
         };
+        
+        // Gestion des écrans
+        window.showScreen = (screenId) => {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                console.log('📱 Changement écran:', screenId);
+            }
+        };
+        
+        // Fonctions de challenge
         window.createChallenge = () => this.createChallenge();
         window.checkIn = () => this.checkIn();
+        window.viewChallenge = (id) => this.viewChallenge(id);
+        window.uploadProof = () => this.uploadProof();
+        
+        // Gestion des onglets
         window.switchTab = (tab) => this.switchTab(tab);
-        window.showScreen = (screenId) => showScreen(screenId);
+        
+        // Fonctions de formulaire challenge
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
         window.selectGage = (element, gage) => this.selectGage(element, gage);
-        window.viewChallenge = (id) => this.viewChallenge(id);
-        window.uploadProof = () => this.uploadProof();
+        
+        // Badges
         window.loadRecentBadges = () => this.loadRecentBadges();
         window.loadBadgesScreen = () => this.loadBadgesScreen();
+        
+        // Modal inscription
         window.showSignupModal = () => this.showSignupModal();
         window.hideSignupModal = () => this.hideSignupModal();
         window.signupFromModal = () => this.signupFromModal();
+        
+        // Profil
         window.showSettings = () => this.showSettings();
         window.updateProfile = () => this.updateProfile();
+        
+        console.log('✅ Toutes les fonctions globales exposées');
+    }
+
+    // ========== GESTION UI ==========
+    initializeUI() {
 
         // Gérer les changements d'écran
         document.addEventListener('screenChange', (e) => {

@@ -22,20 +22,25 @@ export class Validators {
     // ========== VALIDATION MOT DE PASSE ==========
     static validatePassword(password) {
         if (!password || typeof password !== 'string') {
-            return { valid: false, message: 'Mot de passe requis' };
+            return { valid: false, message: 'Le mot de passe est requis' };
         }
 
-        // Longueur minimale réduite à 6 (très permissif)
+        // Réduction à 6 caractères minimum pour faciliter l'inscription
         if (password.length < 6) {
-            return { valid: false, message: 'Le mot de passe doit contenir au moins 6 caractères' };
+            return {
+                valid: false,
+                message: 'Le mot de passe doit contenir au moins 6 caractères'
+            };
         }
 
-        // Longueur maximale (sécurité)
         if (password.length > 128) {
-            return { valid: false, message: 'Le mot de passe est trop long (max 128 caractères)' };
+            return {
+                valid: false,
+                message: 'Le mot de passe ne doit pas dépasser 128 caractères'
+            };
         }
 
-        // Plus aucune exigence de format - juste la longueur
+        // Plus aucune exigence de complexité - juste la longueur
         return { valid: true, value: password };
     }
 
@@ -290,7 +295,7 @@ export class Validators {
     // ========== VALIDATION RATE LIMITING ==========
     static rateLimitData = new Map();
 
-    static checkRateLimit(identifier, maxAttempts = 5, windowMs = 15 * 60 * 1000) {
+    static checkRateLimit(identifier, maxAttempts = 20, windowMs = 30 * 60 * 1000) {
         const now = Date.now();
         const userAttempts = this.rateLimitData.get(identifier) || { count: 0, resetTime: now + windowMs };
 
