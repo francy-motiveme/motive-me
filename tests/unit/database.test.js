@@ -1,83 +1,162 @@
-
 import { jest } from '@jest/globals';
 
-// Mock Supabase
-const mockSupabase = {
-    from: jest.fn(() => ({
-        select: jest.fn(() => ({ 
-            limit: jest.fn(() => Promise.resolve({ data: [], error: null }))
-        })),
-        insert: jest.fn(() => Promise.resolve({ data: {}, error: null })),
-        update: jest.fn(() => ({
-            eq: jest.fn(() => Promise.resolve({ data: {}, error: null }))
-        }))
-    })),
-    auth: {
-        getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null }))
-    }
-};
-
-jest.unstable_mockModule('@supabase/supabase-js', () => ({
-    createClient: jest.fn(() => mockSupabase)
-}));
+// Mock fetch pour simuler les appels API Express
+global.fetch = jest.fn();
 
 const { Database } = await import('../../js/modules/database.js');
 
-describe('Database Module', () => {
+describe('Database Module - Express API', () => {
     let database;
 
     beforeEach(() => {
         database = new Database();
         jest.clearAllMocks();
+        
+        // Mock successful API responses by default
+        global.fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ 
+                success: true, 
+                data: { id: 'test-id', email: 'test@example.com' } 
+            }),
+        });
     });
 
     test('should initialize properly', () => {
         expect(database).toBeInstanceOf(Database);
-        expect(database.isConnected).toBe(false);
-        expect(database.retryCount).toBe(0);
+        expect(database.client).toBeDefined();
+        expect(database.client.connected).toBe(true);
     });
 
-    test('should connect successfully', async () => {
-        const result = await database.connect();
+    test('should handle API calls successfully', async () => {
+        const result = await database._fetch('/test');
         expect(result.success).toBe(true);
-        expect(database.isConnected).toBe(true);
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/test'),
+            expect.objectContaining({
+                credentials: 'include'
+            })
+        );
     });
 
-    test('should handle connection failure gracefully', async () => {
-        // Mock a connection failure
-        mockSupabase.from.mockImplementationOnce(() => {
-            throw new Error('Connection failed');
+    test('should handle API errors gracefully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            json: () => Promise.resolve({ error: 'Server error' }),
         });
 
-        const result = await database.connect();
-        expect(result.success).toBe(true); // Should activate fallback mode
-        expect(result.fallback).toBe(true);
+        const result = await database._fetch('/test');
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Server error');
     });
 
-    test('should create user successfully', async () => {
-        await database.connect();
-        
-        const userData = {
-            id: 'test-id',
-            email: 'test@example.com',
+    test('should handle signup successfully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 201,
+            json: () => Promise.resolve({ 
+                success: true, 
+                data: {
+                    user: { id: 'user-123', email: 'test@example.com' },
+                    session: { access_token: 'token-123' }
+                }
+            }),
+        });
+
+        const result = await database.signUp('test@example.com', 'Password123!', {
             name: 'Test User'
+        });
+        
+        expect(result.success).toBe(true);
+        expect(result.data.user.email).toBe('test@example.com');
+    });
+
+    test('should handle signin successfully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ 
+                success: true, 
+                data: {
+                    user: { id: 'user-123', email: 'test@example.com' },
+                    session: { access_token: 'token-123' }
+                }
+            }),
+        });
+
+        const result = await database.signIn('test@example.com', 'Password123!');
+        
+        expect(result.success).toBe(true);
+        expect(result.data.user.email).toBe('test@example.com');
+    });
+
+    test('should handle signout successfully', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true }),
+        });
+
+        const result = await database.signOut();
+        
+        expect(result.success).toBe(true);
+        expect(database.currentSession).toBeNull();
+    });
+
+    test('should get current session', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ 
+                success: true,
+                data: {
+                    session: { access_token: 'token-123' },
+                    user: { id: 'user-123', email: 'test@example.com' }
+                }
+            }),
+        });
+
+        const result = await database.getCurrentSession();
+        
+        expect(result.success).toBe(true);
+        expect(result.session).toBeDefined();
+    });
+
+    test('should create challenge', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 201,
+            json: () => Promise.resolve({ 
+                success: true, 
+                data: {
+                    id: 'challenge-123',
+                    title: 'Test Challenge',
+                    user_id: 'user-123'
+                }
+            }),
+        });
+
+        const challengeData = {
+            user_id: 'user-123',
+            title: 'Test Challenge',
+            duration: 30,
+            frequency: 'daily'
         };
 
-        const result = await database.createUser(userData);
+        const result = await database.createChallenge(challengeData);
+        
         expect(result.success).toBe(true);
+        expect(result.data.title).toBe('Test Challenge');
     });
 
-    test('should handle user creation failure', async () => {
-        await database.connect();
-        
-        // Mock insert failure
-        mockSupabase.from().insert.mockResolvedValueOnce({
-            data: null,
-            error: { message: 'Insert failed' }
-        });
+    test('should handle network errors', async () => {
+        global.fetch.mockRejectedValueOnce(new Error('Network error'));
 
-        const result = await database.createUser({});
+        const result = await database._fetch('/test');
+        
         expect(result.success).toBe(false);
-        expect(result.error).toContain('Insert failed');
+        expect(result.error).toContain('Network error');
     });
 });

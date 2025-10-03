@@ -2,7 +2,7 @@
 
 ## Overview
 
-MotiveMe is a goal achievement application that leverages social pressure and witnesses to help users complete personal challenges. It's a Progressive Web App (PWA) built with vanilla JavaScript ES6+ modules, using Supabase as the backend database and authentication provider. The application allows users to create challenges, invite witnesses, perform daily check-ins, and track progress through a gamified system with badges and analytics.
+MotiveMe is a goal achievement application that leverages social pressure and witnesses to help users complete personal challenges. It's a Progressive Web App (PWA) built with vanilla JavaScript ES6+ modules, using Express.js backend with PostgreSQL database. The application allows users to create challenges, invite witnesses, perform daily check-ins, and track progress through a gamified system with badges and analytics.
 
 ## User Preferences
 
@@ -21,18 +21,19 @@ The application follows a modular Single Page Application (SPA) architecture usi
 The architecture uses ES6 imports/exports for dependency management and follows a publish-subscribe pattern for inter-module communication. State is managed locally within modules and synchronized through the database layer.
 
 ### Backend Architecture
-The application uses Supabase as a Backend-as-a-Service (BaaS) solution, providing:
+The application uses Express.js as a backend server with PostgreSQL database, providing:
 
-- **Database**: PostgreSQL database with Row Level Security (RLS) policies
-- **Authentication**: Built-in auth with email/password, session management, and user profiles
-- **Real-time**: WebSocket subscriptions for live updates
-- **Storage**: File uploads for challenge proof photos/videos
+- **Database**: PostgreSQL database with manual authorization checks in Express middleware
+- **Authentication**: Custom Express session-based auth with bcrypt password hashing
+- **API**: RESTful API endpoints for all CRUD operations
+- **Security**: CSRF protection, rate limiting, input validation and sanitization
 
-The database interface is abstracted through a centralized `database.js` module that handles all Supabase interactions, error handling, and response normalization.
+The database interface is abstracted through a centralized `database.js` module that handles all API calls, error handling, and response normalization.
 
 ### Data Storage Solutions
-**Primary Database**: Supabase PostgreSQL with the following key tables:
+**Primary Database**: PostgreSQL (Replit-hosted) with the following key tables:
 - `users`: User profiles and metadata
+- `auth_credentials`: Email/password credentials with verification status
 - `challenges`: Challenge definitions and settings
 - `check_ins`: Daily progress entries with proof
 - `notifications`: System notifications
@@ -43,14 +44,15 @@ The database interface is abstracted through a centralized `database.js` module 
 **Client Storage**: LocalStorage for session persistence and offline capability through a Service Worker implementation.
 
 ### Authentication and Authorization
-**Authentication Strategy**: Email/password authentication through Supabase Auth with the following security measures:
+**Authentication Strategy**: Email/password authentication through Express sessions with the following security measures:
 - Password validation requiring 8+ characters, uppercase, lowercase, numbers, and special characters
-- Rate limiting on login attempts (5 max with temporary blocking)
-- Email verification for new accounts
-- Session refresh tokens for persistent login
+- Rate limiting on login attempts (5 max per 15 minutes)
+- Email verification for new accounts (with confirmation tokens)
+- Session cookies with httpOnly and secure flags
 - XSS protection through input sanitization
+- CSRF protection on all POST/PUT/DELETE routes
 
-**Authorization**: Row Level Security (RLS) policies ensure users can only access their own data and authorized witness relationships.
+**Authorization**: Express middleware checks ensure users can only access their own data and authorized witness relationships.
 
 ### Progressive Web App Features
 The application is configured as a PWA with:
@@ -62,7 +64,12 @@ The application is configured as a PWA with:
 ## External Dependencies
 
 ### Core Dependencies
-- **@supabase/supabase-js**: Backend database and authentication service
+- **express**: Backend API server with routing and middleware
+- **pg**: PostgreSQL database driver
+- **bcryptjs**: Password hashing and verification
+- **express-session**: Session management with secure cookies
+- **csurf**: CSRF protection middleware
+- **nodemailer**: Email service for confirmations and notifications
 - **chart.js**: Data visualization for progress analytics and dashboard charts
 - **date-fns**: Date manipulation and formatting utilities
 - **vite**: Build tool and development server for modern JavaScript bundling
@@ -74,26 +81,34 @@ The application is configured as a PWA with:
 - **prettier**: Code formatting
 
 ### Optional Services
-- **EmailJS**: Third-party email service for witness notifications (configured but optional)
+- **EmailJS**: Third-party email service for witness notifications (frontend fallback)
+- **SMTP Server**: For sending verification and notification emails (nodemailer)
 
 ### Environment Configuration
 The application uses environment variables managed through Replit Secrets:
-- `SUPABASE_URL`: Database connection endpoint
-- `SUPABASE_ANON_KEY`: Public API key for client-side operations
-- `SUPABASE_SERVICE_ROLE_KEY`: Admin API key for server-side operations (used for initial setup)
+- `DATABASE_URL`: PostgreSQL connection string
 - `SESSION_SECRET`: Encryption key for session security
+- `SMTP_HOST`: Email server hostname (optional)
+- `SMTP_PORT`: Email server port (optional)
+- `SMTP_USER`: Email server username (optional)
+- `SMTP_PASSWORD`: Email server password (optional)
+- `APP_URL`: Application public URL for email links
+- `VITE_EMAILJS_PUBLIC_KEY`: EmailJS public key (optional, frontend)
+- `VITE_EMAILJS_SERVICE_ID`: EmailJS service ID (optional, frontend)
 
 The build system (Vite) handles environment variable injection and provides hot module replacement for development, with production optimization including code splitting and asset optimization.
 
 ## Replit Environment Setup
 
-### Latest Update: September 30, 2025
+### Latest Update: January 3, 2026
 
-**✅ GitHub Import Successfully Configured and Running:**
+**✅ Express + PostgreSQL Architecture Fully Configured:**
 
-1. **Dependencies**: All npm packages installed successfully (506 packages)
+1. **Dependencies**: All npm packages installed successfully
    - Installed via `npm install`
    - All dependencies from package.json resolved
+   - Removed: @supabase/supabase-js
+   - Added: csurf, nodemailer
 
 2. **Build System**: Vite configured for Replit environment:
    - Host: `0.0.0.0` (accepts all connections for Replit proxy)
@@ -103,80 +118,114 @@ The build system (Vite) handles environment variable injection and provides hot 
    - Environment variable injection configured via `define` in vite.config.js
    - HMR (Hot Module Replacement) configured with WSS protocol
 
-3. **Workflow**: Development server running successfully:
-   - Command: `npm run dev` (Vite with HMR)
-   - Status: ✅ RUNNING on http://0.0.0.0:5000/
-   - Auto-restart configured
+3. **Workflows**: Two workflows configured:
+   - **Backend API**: `node server/index.js` (port 3000)
+   - **MotiveMe**: `npm run dev` (port 5000, frontend Vite server)
+   - Status: Both workflows auto-restart on changes
 
-4. **Database**: Supabase fully configured and operational:
-   - ✅ All environment variables configured in Replit Secrets
+4. **Database**: PostgreSQL (Replit-hosted) fully configured:
+   - ✅ DATABASE_URL environment variable configured
    - ✅ Database tables created and verified:
      - `users` - User profiles
+     - `auth_credentials` - Authentication credentials
      - `challenges` - Challenge definitions
      - `check_ins` - Daily check-ins
      - `notifications` - System notifications
      - `witness_interactions` - Witness relationships
      - `achievements` - Badges and achievements
      - `file_uploads` - File tracking
-   - ✅ RLS (Row Level Security) policies active
-   - ✅ Triggers configured for auto-updates
    - ✅ Indexes created for performance
+   - ✅ Triggers configured for auto-updates
 
 5. **Application Status**:
-   - ✅ Application running successfully on port 5000
-   - ✅ Login/signup screens displaying correctly
-   - ✅ Supabase client initialized
+   - ✅ Frontend loading successfully on port 5000
+   - ✅ Backend API running on port 3000
    - ✅ Database connection established
-   - ✅ AuthManager initialized
-   - ✅ Service Worker registered and active
-   - ✅ PWA features enabled
-   - ✅ All managers (auth, challenges, badges, analytics, email) initialized
+   - ✅ All core features operational
 
-6. **Security**: 
-   - ✅ All Supabase credentials stored in Replit Secrets (not in code)
-   - ✅ .gitignore properly configured for Node.js
-   - ✅ Environment variables properly mapped for runtime injection
-   - ✅ RLS policies protecting all user data
+## Development Guidelines
 
-### Current Configuration
+### Running the Application
+```bash
+# Install dependencies (if not already done)
+npm install
 
-**Environment Variables (Configured in Replit Secrets):**
-- `SUPABASE_URL` - ✅ Set
-- `SUPABASE_ANON_KEY` - ✅ Set
-- `SUPABASE_SERVICE_ROLE_KEY` - ✅ Set
-- `SESSION_SECRET` - ✅ Set
-
-**Deployment Configuration:**
-- Deployment target: Autoscale (stateless web app)
-- Build command: `npm run build` (Vite production build)
-- Run command: `npm run preview` (serves production build)
-- Port: 5000 (configured in vite.config.js)
-- Ready to publish via Replit's deployment button
+# Start both workflows (backend + frontend)
+# Backend: node server/index.js (port 3000)
+# Frontend: npm run dev (port 5000)
+```
 
 ### Testing
+```bash
+# Run all tests
+npm test
 
-**Available Test Commands:**
-- `npm test` - Run all tests (unit + integration)
-- `npm run test:unit` - Run unit tests only
-- `npm run test:integration` - Run integration tests
-- `npm run test:e2e` - Run end-to-end tests with Playwright
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
+# Run unit tests only
+npm run test:unit
 
-### Known Issues / Notes
+# Run integration tests
+npm run test:integration
 
-**Minor Issues (non-critical):**
-- ⚠️ WebSocket connection for Vite HMR occasionally fails (doesn't affect app functionality, only hot reload)
-- ℹ️ Some DOM autocomplete warnings in browser console (UX improvement suggestions)
+# Run E2E tests
+npm run test:e2e
 
-**All critical functionality is working correctly.**
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+### Database Management
+When modifying database schema:
+1. Update `server/db.js` table creation queries
+2. Backend will auto-create missing tables on startup
+3. For major schema changes, backup data first
+
+### Code Quality
+```bash
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+
+# Security audit
+npm run security
+```
+
+## Known Issues and Solutions
+
+### Issue 1: Backend won't start
+**Symptom**: Error "relation 'users' does not exist"
+**Solution**: Tables are created in correct order on startup. If issue persists, check DATABASE_URL is set.
+
+### Issue 2: Session not persisting
+**Symptom**: User logged out on page refresh
+**Solution**: Ensure SESSION_SECRET is set in environment variables. Express session uses MemoryStore (okay for development).
+
+### Issue 3: Emails not sending
+**Symptom**: No confirmation emails received
+**Solution**: Configure SMTP settings in environment variables, or emails will be simulated (logged to console).
+
+### Issue 4: Frontend can't reach backend
+**Symptom**: API calls failing with CORS errors
+**Solution**: Backend automatically allows localhost:5000. For production, update CORS settings in server/index.js.
 
 ## Recent Changes
 
-### 2025-09-30: Initial Replit Setup
-- Installed all npm dependencies
-- Configured Vite for Replit environment
-- Verified Supabase database tables exist
-- Configured and started development workflow
-- Confirmed all application modules initialize correctly
-- Application ready for testing and use
+### January 3, 2026
+- ✅ Removed all Supabase references
+- ✅ Migrated to pure Express.js + PostgreSQL architecture
+- ✅ Added CSRF protection middleware
+- ✅ Added nodemailer for email confirmations
+- ✅ Fixed backend startup order (users table created first)
+- ✅ Improved input validation and sanitization
+- ✅ Auto-login after signup implemented
+- ✅ Session endpoint returns complete user profile
+
+### Architecture Decisions
+- **Why Express over Supabase?**: Full control over backend logic, no vendor lock-in, easier debugging
+- **Why session-based auth?**: Simpler than JWT for this use case, secure with httpOnly cookies
+- **Why PostgreSQL?**: Robust, reliable, great for relational data with complex queries
+- **Why nodemailer?**: Industry standard, supports all major SMTP providers

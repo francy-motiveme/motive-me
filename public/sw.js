@@ -28,13 +28,13 @@ const STATIC_FILES = [
 const DYNAMIC_CACHE_PATTERNS = [
   /^https:\/\/fonts\.googleapis\.com/,
   /^https:\/\/cdnjs\.cloudflare\.com/,
-  /^https:\/\/.*\.supabase\.co\/rest\/v1/
+  /^http:\/\/localhost:3000\/api/
 ];
 
 // URLs à ne jamais mettre en cache
 const NO_CACHE_PATTERNS = [
-  /^https:\/\/.*\.supabase\.co\/auth\/v1/,
-  /\/api\/auth\//
+  /\/api\/auth\//,
+  /\/api\/session/
 ];
 
 // ========== INSTALLATION ==========
