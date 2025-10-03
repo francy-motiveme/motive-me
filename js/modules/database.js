@@ -79,8 +79,8 @@ class Database {
 
             this.retryCount++;
             if (this.retryCount < this.maxRetries) {
-                const delay = this.retryCount * 1000;
-                console.log(`🔄 Tentative ${this.retryCount}/${this.maxRetries} dans ${delay}ms`);
+                const delay = Math.min(this.retryCount * 2000, 5000);
+                console.log(`🔄 Tentative ${this.retryCount}/${this.maxRetries} dans ${delay / 1000}s...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return this.connect();
             }

@@ -419,19 +419,19 @@ export class AuthManager {
 
         switch (event) {
             case 'SIGNED_IN':
-            case 'INITIAL_SESSION':  // CORRECTION CRITIQUE: Traiter INITIAL_SESSION comme SIGNED_IN
+            case 'INITIAL_SESSION':
                 if (session?.user && !this.currentUser) {
                     console.log('🔄 Chargement profil depuis événement:', event, session.user.email);
                     this.loadUserProfile(session.user);
                 } else if (session?.user && this.currentUser) {
-                    // Utilisateur déjà chargé, just refresh session
                     this.currentUser.session = session;
                     this.notifyAuthListeners('USER_UPDATED', this.currentUser);
                 }
                 break;
 
             case 'SIGNED_OUT':
-                console.log('🔄 SIGNED_OUT détecté');
+            case 'NO_SESSION':
+                console.log('🔄 Aucune session active');
                 this.currentUser = null;
                 this.notifyAuthListeners('SIGNED_OUT', null);
                 break;

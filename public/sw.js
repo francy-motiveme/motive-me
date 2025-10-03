@@ -40,7 +40,7 @@ const NO_CACHE_PATTERNS = [
 // ========== INSTALLATION ==========
 self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker installing...');
-  
+
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
@@ -60,7 +60,7 @@ self.addEventListener('install', (event) => {
 // ========== ACTIVATION ==========
 self.addEventListener('activate', (event) => {
   console.log('🚀 Service Worker activating...');
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -102,11 +102,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stratégie Network First pour l'API Supabase
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(networkFirst(request));
-    return;
-  }
+  // Stratégie Network First pour l'API backend
+    if (url.pathname.startsWith('/api/')) {
+        event.respondWith(networkFirst(request));
+        return;
+    }
 
   // Stratégie Stale While Revalidate pour les autres ressources
   if (DYNAMIC_CACHE_PATTERNS.some(pattern => pattern.test(request.url))) {
@@ -129,7 +129,7 @@ async function cacheFirst(request) {
     }
 
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.status === 200) {
       const cache = await caches.open(STATIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
@@ -146,7 +146,7 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.status === 200) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
@@ -156,7 +156,7 @@ async function networkFirst(request) {
   } catch (error) {
     console.log('Network failed, trying cache for:', request.url);
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -190,7 +190,7 @@ async function staleWhileRevalidate(request) {
 async function networkWithFallback(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.status === 200) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
@@ -199,7 +199,7 @@ async function networkWithFallback(request) {
     return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
@@ -229,10 +229,10 @@ self.addEventListener('sync', (event) => {
 async function syncCheckins() {
   try {
     console.log('🔄 Syncing offline check-ins...');
-    
+
     // Récupérer les check-ins en attente depuis IndexedDB
     const pendingCheckins = await getStoredCheckins();
-    
+
     for (const checkin of pendingCheckins) {
       try {
         await sendCheckin(checkin);
@@ -340,12 +340,12 @@ async function sendCheckin(checkin) {
       credentials: 'include',
       body: JSON.stringify(checkin)
     });
-    
+
     if (response.ok) {
       console.log('✅ Check-in envoyé:', checkin);
       return true;
     }
-    
+
     console.error('❌ Erreur envoi check-in');
     return false;
   } catch (error) {
