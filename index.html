@@ -1030,6 +1030,40 @@
         </div>
     </div>
 
+    <!-- Fonctions globales temporaires (éviter erreurs onclick) -->
+    <script>
+        // Fonctions globales de base
+        window.showScreen = function(screenId) {
+            console.log('🔄 Changement écran:', screenId);
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const screen = document.getElementById(screenId);
+            if (screen) screen.classList.add('active');
+        };
+        
+        window.switchTab = function(tab) {
+            console.log('📑 Changement onglet:', tab);
+        };
+        
+        window.selectGage = function(element, gage) {
+            document.querySelectorAll('.gage-option').forEach(o => o.classList.remove('selected'));
+            element.classList.add('selected');
+        };
+        
+        window.createChallenge = function() {
+            console.log('🎯 Création challenge...');
+        };
+        
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            return false;
+        };
+        
+        window.handleSignup = function(e) {
+            e.preventDefault();
+            return false;
+        };
+    </script>
+
     <!-- Application modulaire sécurisée -->
     <script type="module" src="/js/app.js"></script>
 

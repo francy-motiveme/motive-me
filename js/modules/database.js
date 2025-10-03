@@ -1,6 +1,10 @@
-replit_final_file>
 // Base de données - Interface Express API Backend
-const API_BASE_URL = `http://${window.location.hostname}:3000/api`;
+// Déterminer l'URL de base API - FORCER 127.0.0.1 si localhost
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        // Convertir localhost en 127.0.0.1 pour éviter problèmes CORS
+        const apiHostname = hostname === 'localhost' ? '127.0.0.1' : hostname;
+        const API_BASE_URL = `http://${apiHostname}:3000/api`;
+        console.log('🌐 API Base URL:', API_BASE_URL);
 
 class EventEmitter {
     constructor() {
@@ -45,7 +49,7 @@ class Database {
 
         try {
             const healthUrl = `${API_BASE_URL.replace('/api', '')}/api/health`;
-            
+
             const response = await Promise.race([
                 fetch(healthUrl, {
                     credentials: 'include',
@@ -61,7 +65,7 @@ class Database {
             }
 
             const data = await response.json();
-            
+
             if (data.status !== 'ok') {
                 throw new Error('API health check failed');
             }
@@ -117,7 +121,7 @@ class Database {
 
         try {
             const response = await fetch(url, { ...defaultOptions, ...options });
-            
+
             let data;
             try {
                 data = await response.json();
@@ -131,7 +135,7 @@ class Database {
                     this.currentSession = null;
                     this.authEmitter.emit('SIGNED_OUT', null);
                 }
-                
+
                 const errorMsg = data.error || `HTTP ${response.status}`;
                 console.error(`❌ Fetch error [${endpoint}]: ${errorMsg}`);
                 throw new Error(errorMsg);
@@ -141,12 +145,12 @@ class Database {
         } catch (error) {
             const errorMessage = error.message || 'Network error';
             console.error(`❌ Fetch error [${endpoint}]:`, errorMessage);
-            
+
             // Si mode dégradé n'est pas encore activé et qu'on a une erreur réseau
             if (!this.fallbackMode && errorMessage.includes('Failed to fetch')) {
                 console.warn('⚠️ Erreur réseau détectée, passage en mode dégradé possible');
             }
-            
+
             return { success: false, error: errorMessage };
         }
     }

@@ -53,8 +53,8 @@ app.use(session({
 
 const authLimiter = rateLimit({
   windowMs: 30 * 60 * 1000,
-  max: 30,
-  message: 'Too many authentication attempts, please try again later.',
+  max: 50, // Augmenté à 50 tentatives pour faciliter les tests
+  message: 'Trop de tentatives. Réessayez dans 30 minutes.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -66,7 +66,7 @@ function isValidEmail(email) {
 
 function isValidPassword(password) {
   if (!password || typeof password !== 'string') return false;
-  // Réduction à 4 caractères minimum pour faciliter les tests
+  // Assouplissement MAXIMAL: 4 caractères minimum, aucune exigence de complexité
   if (password.length < 4 || password.length > 128) return false;
   return true;
 }
@@ -97,7 +97,8 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
     if (!isValidPassword(password)) {
       return res.status(400).json({ 
-        error: 'Le mot de passe doit contenir au moins 4 caractères'
+        success: false,
+        error: 'Le mot de passe doit contenir au moins 4 caractères (aucune exigence de complexité)'
       });
     }
 

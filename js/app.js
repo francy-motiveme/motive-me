@@ -76,7 +76,7 @@ class MotiveMeApp {
         window.login = () => this.login();
         window.signup = () => this.signup();
         window.logout = () => this.logout();
-        
+
         // Handlers de formulaires
         window.handleLogin = (event) => {
             event.preventDefault();
@@ -88,16 +88,16 @@ class MotiveMeApp {
             this.signup();
             return false;
         };
-        
+
         // Gestion des écrans - FONCTION GLOBALE CRITIQUE
         window.showScreen = (screenId) => {
             console.log('🔄 showScreen appelé:', screenId);
-            
+
             // Masquer tous les écrans
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-            
+
             // Afficher l'écran demandé
             const targetScreen = document.getElementById(screenId);
             if (targetScreen) {
@@ -107,7 +107,7 @@ class MotiveMeApp {
                 console.error('❌ Écran non trouvé:', screenId);
             }
         };
-        
+
         // Fonctions de challenge
         window.createChallenge = () => {
             console.log('🎯 createChallenge appelé');
@@ -116,13 +116,13 @@ class MotiveMeApp {
         window.checkIn = () => this.checkIn();
         window.viewChallenge = (id) => this.viewChallenge(id);
         window.uploadProof = () => this.uploadProof();
-        
+
         // Gestion des onglets
         window.switchTab = (tab) => {
             console.log('📑 switchTab appelé:', tab);
             return this.switchTab(tab);
         };
-        
+
         // Fonctions de formulaire challenge
         window.toggleDaysSelector = () => this.toggleDaysSelector();
         window.toggleDay = (element) => this.toggleDay(element);
@@ -130,20 +130,20 @@ class MotiveMeApp {
             console.log('🎪 selectGage appelé:', gage);
             return this.selectGage(element, gage);
         };
-        
+
         // Badges
         window.loadRecentBadges = () => this.loadRecentBadges();
         window.loadBadgesScreen = () => this.loadBadgesScreen();
-        
+
         // Modal inscription
         window.showSignupModal = () => this.showSignupModal();
         window.hideSignupModal = () => this.hideSignupModal();
         window.signupFromModal = () => this.signupFromModal();
-        
+
         // Profil
         window.showSettings = () => this.showSettings();
         window.updateProfile = () => this.updateProfile();
-        
+
         console.log('✅ Toutes les fonctions globales exposées');
     }
 
@@ -243,7 +243,7 @@ class MotiveMeApp {
 
             if (result.success) {
                 showNotification(result.message);
-                
+
                 // Si auto-login, handleAuthChange() va gérer la navigation
                 // Sinon, rediriger vers login avec email pré-rempli
                 if (!result.autoLogin) {
@@ -256,7 +256,7 @@ class MotiveMeApp {
                 } else {
                     console.log('✅ Auto-login activé, attente handleAuthChange');
                 }
-                
+
                 // Vérifier challenge temporaire
                 const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
                 if (tempChallenge) {
@@ -303,7 +303,7 @@ class MotiveMeApp {
                 this.loadDashboard();
                 console.log('🔄 Changement vers dashboard...');
                 showScreen('dashboardScreen');
-                
+
                 // Vérifier et créer le challenge temporaire après connexion
                 this.checkAndCreateTempChallenge();
                 break;
@@ -547,7 +547,7 @@ class MotiveMeApp {
             // Mode invité : sauvegarder en localStorage et afficher modal inscription
             console.log('🔄 Mode invité : sauvegarde du challenge temporaire');
             localStorage.setItem('motiveme_temp_challenge', JSON.stringify(formData));
-            
+
             // Afficher la modal d'inscription contextuelle
             this.showSignupModal();
             return;
@@ -806,14 +806,14 @@ class MotiveMeApp {
 
             if (result.success) {
                 showNotification(result.message);
-                
+
                 // Fermer la modal
                 this.hideSignupModal();
-                
+
                 // Afficher écran de connexion avec email pré-rempli
                 showScreen('loginScreen');
                 document.getElementById('loginEmail').value = email;
-                
+
                 showNotification('Connecte-toi pour créer ton challenge !', 'info');
             } else {
                 showNotification(result.error, 'error');
@@ -828,25 +828,25 @@ class MotiveMeApp {
 
     async checkAndCreateTempChallenge() {
         const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
-        
+
         if (tempChallenge && this.currentUser) {
             try {
                 console.log('📦 Création du challenge temporaire...');
                 const formData = JSON.parse(tempChallenge);
-                
+
                 const result = await challengeManager.createChallenge(formData, this.currentUser.id);
-                
+
                 if (result.success) {
                     showNotification('🎯 Ton challenge a été créé avec succès !');
-                    
+
                     // Mettre à jour les points
                     await authManager.updateUserProfile({
                         points: this.currentUser.points + 10
                     });
-                    
+
                     // Supprimer le challenge temporaire
                     localStorage.removeItem('motiveme_temp_challenge');
-                    
+
                     // Recharger le dashboard
                     this.loadDashboard();
                 } else {
@@ -1051,17 +1051,19 @@ class MotiveMeApp {
 }
 
 // ========== INITIALISATION GLOBALE ==========
-const app = new MotiveMeApp();
-
-// Initialiser quand le DOM est prêt
+// Application modulaire sécurisée
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => app.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        const motiveMeApp = new MotiveMeApp();
+        motiveMeApp.init();
+    });
 } else {
-    app.init();
+    const motiveMeApp = new MotiveMeApp();
+    motiveMeApp.init();
 }
 
 // Exposer l'app globalement pour debug
-window.motiveMeApp = app;
+window.motiveMeApp = motiveMeApp;
 
 // Fonction de déconnexion
 async function signOut() {
