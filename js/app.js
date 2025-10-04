@@ -162,37 +162,76 @@ class MotiveMeApp {
         const email = document.getElementById('signupEmail').value;
         const password = document.getElementById('signupPassword').value;
 
-        console.log('🔄 Début inscription:', { name, email });
+        console.log('🔄 [SIGNUP] Début inscription:', { name, email });
+
+        // Validation côté client
+        if (!name || !email || !password) {
+            showNotification('Tous les champs sont obligatoires', 'error');
+            return;
+        }
 
         setLoading('signupBtn', true, 'Création...');
 
         try {
+            console.log('🔄 [SIGNUP] Appel authManager.signUp...');
             const result = await authManager.signUp({ name, email, password });
 
-            console.log('📊 Résultat inscription:', result);
+            console.log('📊 [SIGNUP] Résultat:', result);
 
             if (result.success) {
+                console.log('✅ [SIGNUP] Inscription réussie');
                 showNotification(result.message, 'success');
 
-                // AUTO-LOGIN : L'utilisateur est connecté automatiquement
-                // handleAuthChange() a déjà été appelé via SIGNED_IN
-                console.log('✅ Inscription réussie, auto-login activé');
+                // Vérifier si l'utilisateur est maintenant connecté
+                console.log('🔄 [SIGNUP] Vérification état connexion...');
+                console.log('🔄 [SIGNUP] currentUser:', this.currentUser);
                 
-                // Redirection automatique vers dashboard (déjà géré par handleAuthChange)
-                // Challenge temporaire sera créé automatiquement
+                // Attendre un peu que handleAuthChange se déclenche
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Si toujours pas connecté, recharger le profil manuellement
+                if (!this.currentUser) {
+                    console.log('⚠️ [SIGNUP] currentUser null, rechargement manuel...');
+                    const session = await authManager.getCurrentSession();
+                    console.log('🔄 [SIGNUP] Session récupérée:', session);
+                    
+                    if (session && session.user) {
+                        await authManager.loadUserProfile(session.user);
+                        this.currentUser = authManager.getCurrentUser();
+                        console.log('✅ [SIGNUP] Profil chargé:', this.currentUser);
+                    }
+                }
+                
+                // Redirection vers dashboard
+                if (this.currentUser) {
+                    console.log('🔄 [SIGNUP] Redirection vers dashboard...');
+                    await this.loadDashboard();
+                    showScreen('dashboardScreen');
+                    
+                    // Vérifier challenge temporaire
+                    await this.checkAndCreateTempChallenge();
+                } else {
+                    console.error('❌ [SIGNUP] Impossible de récupérer le profil utilisateur');
+                    showNotification('Connexion réussie mais erreur de chargement du profil', 'warning');
+                    showScreen('loginScreen');
+                }
             } else {
-                console.error('❌ Échec inscription:', result.error);
+                console.error('❌ [SIGNUP] Échec inscription:', result.error);
                 
                 // Affichage erreur selon le type
                 if (result.emailExists) {
                     showNotification(result.error + ' Tu peux te connecter à la place.', 'warning');
+                    // Pré-remplir l'email sur la page de connexion
+                    showScreen('loginScreen');
+                    const loginEmail = document.getElementById('loginEmail');
+                    if (loginEmail) loginEmail.value = email;
                 } else {
                     showNotification(result.error, 'error');
                 }
             }
         } catch (error) {
-            console.error('❌ Erreur signup:', error);
-            showNotification('Erreur lors de l\'inscription', 'error');
+            console.error('❌ [SIGNUP] Erreur exception:', error);
+            showNotification('Erreur lors de l\'inscription: ' + error.message, 'error');
         } finally {
             setLoading('signupBtn', false);
         }
@@ -974,22 +1013,23 @@ class MotiveMeApp {
 
 // ========== INITIALISATION GLOBALE ==========
 console.log('✅ [APP] Module app.js chargé');
-let motiveMeApp;
-let app; // Variable globale pour compatibilité
 
+// Créer l'instance immédiatement
+const motiveMeApp = new MotiveMeApp();
+const app = motiveMeApp; // Alias global
+
+// Exposer globalement
+window.motiveMeApp = motiveMeApp;
+window.app = app;
+
+// Initialiser selon l'état du DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        motiveMeApp = new MotiveMeApp();
-        app = motiveMeApp; // Alias global
-        window.motiveMeApp = motiveMeApp;
-        window.app = app;
+        console.log('🚀 [APP] DOM chargé, initialisation...');
         motiveMeApp.init();
     });
 } else {
-    motiveMeApp = new MotiveMeApp();
-    app = motiveMeApp; // Alias global
-    window.motiveMeApp = motiveMeApp;
-    window.app = app;
+    console.log('🚀 [APP] DOM déjà chargé, initialisation immédiate...');
     motiveMeApp.init();
 }
 

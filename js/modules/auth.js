@@ -115,7 +115,10 @@ export class AuthManager {
             }
 
             // Charger immédiatement le profil utilisateur
+            console.log('🔄 [AUTH] Données utilisateur reçues:', signUpResult.data);
             const userData = signUpResult.data.user;
+            
+            // Créer l'objet utilisateur complet
             this.currentUser = {
                 id: userData.id,
                 email: userData.email,
@@ -128,9 +131,12 @@ export class AuthManager {
                 lastLogin: new Date().toISOString()
             };
 
+            console.log('✅ [AUTH] Profil utilisateur créé:', this.currentUser);
+
             // Notifier SIGNED_IN immédiatement
-            console.log('✅ [AUTH] Auto-login après inscription:', this.currentUser.email);
+            console.log('🔄 [AUTH] Notification SIGNED_IN...');
             this.notifyAuthListeners('SIGNED_IN', this.currentUser);
+            console.log('✅ [AUTH] Listeners notifiés');
 
             return {
                 success: true,
@@ -460,6 +466,27 @@ export class AuthManager {
                     this.notifyAuthListeners('USER_UPDATED', this.currentUser);
                 }
                 break;
+
+
+
+    // ========== RÉCUPÉRATION SESSION ==========
+    async getCurrentSession() {
+        try {
+            console.log('🔄 [AUTH] Récupération session courante...');
+            const sessionResult = await database.getCurrentSession();
+            
+            if (sessionResult.success && sessionResult.data) {
+                console.log('✅ [AUTH] Session trouvée:', sessionResult.data.user?.email);
+                return sessionResult.data;
+            }
+            
+            console.log('⚠️ [AUTH] Aucune session trouvée');
+            return null;
+        } catch (error) {
+            console.error('❌ [AUTH] Erreur récupération session:', error);
+            return null;
+        }
+    }
 
             case 'SIGNED_OUT':
             case 'NO_SESSION':
