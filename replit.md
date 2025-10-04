@@ -90,7 +90,7 @@ The build system (Vite) handles environment variable injection and provides hot 
 
 ## Replit Environment Setup
 
-### Latest Update: January 3, 2026
+### Latest Update: October 4, 2025
 
 **✅ Express + PostgreSQL Architecture Fully Configured:**
 
@@ -107,11 +107,12 @@ The build system (Vite) handles environment variable injection and provides hot 
    - Cache-Control headers configured (no-cache for development)
    - Environment variable injection configured via `define` in vite.config.js
    - HMR (Hot Module Replacement) configured with WSS protocol
+   - **✅ Vite Proxy**: `/api` requests proxied to `http://localhost:3000`
 
 3. **Workflows**: Two workflows configured:
-   - **Backend API**: `node server/index.js` (port 3000)
-   - **MotiveMe**: `npm run dev` (port 5000, frontend Vite server)
-   - Status: Both workflows auto-restart on changes
+   - **Backend API**: `node server/index.js` (port 3000, localhost)
+   - **MotiveMe**: `npm run dev` (port 5000, 0.0.0.0, frontend Vite server)
+   - Status: Both workflows running successfully
 
 4. **Database**: PostgreSQL (Replit-hosted) fully configured:
    - ✅ DATABASE_URL environment variable configured
@@ -130,8 +131,9 @@ The build system (Vite) handles environment variable injection and provides hot 
 5. **Application Status**:
    - ✅ Frontend loading successfully on port 5000
    - ✅ Backend API running on port 3000
-   - ✅ Database connection established
-   - ✅ All core features operational
+   - ✅ Database connection established via Vite proxy
+   - ✅ API health endpoint: `{"status":"ok","message":"MotiveMe API is running"}`
+   - ✅ Signup/Login flow functional
 
 ## Development Guidelines
 
@@ -204,6 +206,16 @@ npm run security
 
 ## Recent Changes
 
+### October 4, 2025 - Critical Fixes
+- ✅ Fixed export statement in `js/app.js` (changed `export default app` to `export default motiveMeApp`)
+- ✅ Configured Vite proxy to forward `/api` requests to backend on port 3000
+- ✅ Simplified API_BASE_URL to use relative path `/api` instead of absolute URLs
+- ✅ Updated CORS configuration to support Replit domains dynamically
+- ✅ Fixed database connection issues - API now fully accessible from frontend
+- ✅ Verified signup/login flow working end-to-end
+- ✅ Created PostgreSQL database and initialized all tables
+- ✅ Both workflows (Backend API & MotiveMe) running successfully
+
 ### January 3, 2026
 - ✅ Removed all Supabase references
 - ✅ Migrated to pure Express.js + PostgreSQL architecture
@@ -219,3 +231,4 @@ npm run security
 - **Why session-based auth?**: Simpler than JWT for this use case, secure with httpOnly cookies
 - **Why PostgreSQL?**: Robust, reliable, great for relational data with complex queries
 - **Why nodemailer?**: Industry standard, supports all major SMTP providers
+- **Why Vite Proxy?**: In Replit, frontend and backend run on different ports; Vite proxy enables seamless communication

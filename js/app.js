@@ -1018,4 +1018,4 @@ window.authManager = authManager;
 window.challengeManager = challengeManager;
 window.uiManager = uiManager;
 
-export default app;
+export default motiveMeApp;

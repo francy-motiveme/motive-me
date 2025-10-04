@@ -1,10 +1,7 @@
 // Base de données - Interface Express API Backend
-// Déterminer l'URL de base API - FORCER 127.0.0.1 si localhost
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-        // Convertir localhost en 127.0.0.1 pour éviter problèmes CORS
-        const apiHostname = hostname === 'localhost' ? '127.0.0.1' : hostname;
-        const API_BASE_URL = `http://${apiHostname}:3000/api`;
-        console.log('🌐 API Base URL:', API_BASE_URL);
+// Utiliser le proxy Vite pour les requêtes API
+const API_BASE_URL = '/api';
+console.log('🌐 API Base URL:', API_BASE_URL);
 
 class EventEmitter {
     constructor() {

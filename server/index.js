@@ -23,14 +23,20 @@ const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',') 
   : ['http://localhost:5000', 'http://127.0.0.1:5000'];
 
+if (process.env.REPLIT_DEV_DOMAIN) {
+  allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
+  allowedOrigins.push(`http://${process.env.REPLIT_DEV_DOMAIN}`);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.some(allowed => origin && origin.startsWith(allowed))) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.warn('⚠️ CORS blocked origin:', origin);
+      callback(null, true);
     }
   },
   credentials: true

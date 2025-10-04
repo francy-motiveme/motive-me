@@ -19,10 +19,15 @@ export default defineConfig({
       'ETag': false,
       'Last-Modified': false
     },
-    // Configuration critique pour Replit - accepter TOUS les hosts
     allowedHosts: true,
-    // Configuration spécifique Replit pour éviter les blocages
-    origin: 'http://localhost:5000'
+    origin: 'http://localhost:5000',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     outDir: 'dist',
