@@ -174,12 +174,12 @@ class MotiveMeApp {
             if (result.success) {
                 showNotification(result.message, 'success');
 
-                // L'utilisateur est maintenant connecté automatiquement
-                // handleAuthChange() va gérer la redirection vers dashboard
+                // AUTO-LOGIN : L'utilisateur est connecté automatiquement
+                // handleAuthChange() a déjà été appelé via SIGNED_IN
                 console.log('✅ Inscription réussie, auto-login activé');
                 
-                // NE PAS rediriger manuellement - laisser handleAuthChange() le faire
-                // Vérifier challenge temporaire sera fait dans handleAuthChange()
+                // Redirection automatique vers dashboard (déjà géré par handleAuthChange)
+                // Challenge temporaire sera créé automatiquement
             } else {
                 console.error('❌ Échec inscription:', result.error);
                 
