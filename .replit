@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web"]
+modules = ["nodejs-20", "python-3.11", "web"]
 [agent]
 expertMode = true
 
@@ -7,7 +7,7 @@ channel = "stable-25_05"
 packages = ["tree"]
 
 [workflows]
-runButton = "Project"
+runButton = "Python Backend"
 
 [[workflows.workflow]]
 name = "Project"
@@ -198,6 +198,19 @@ waitForPort = 3000
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "Python Backend"
+author = 48287981
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 db_init.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
 
 [[ports]]
 localPort = 3000

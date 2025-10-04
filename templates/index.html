@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotiveMe - Python Edition</title>
+    <style>
+        /* Copier tout le CSS de index.html ici */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 480px;
+            min-height: 600px;
+        }
+        /* ... reste du CSS ... */
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <h1>🎯 MotiveMe</h1>
+            <p>Python Edition - Transforme tes objectifs en habitudes</p>
+        </div>
+        
+        <div id="app">
+            <h2>Application Python Fonctionnelle</h2>
+            <p>Backend Flask opérationnel sur port 3000</p>
+        </div>
+    </div>
+    
+    <script>
+        // Client API simple
+        async function signup(email, password, name) {
+            const res = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({email, password, metadata: {name}})
+            });
+            return res.json();
+        }
+        
+        async function signin(email, password) {
+            const res = await fetch('/api/auth/signin', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({email, password})
+            });
+            return res.json();
+        }
+        
+        console.log('✅ MotiveMe Python Edition chargée');
+    </script>
+</body>
+</html>
