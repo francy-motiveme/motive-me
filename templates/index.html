@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotiveMe - Python Edition</title>
     <style>
-        /* Copier tout le CSS de index.html ici */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -22,47 +21,279 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
             max-width: 480px;
-            min-height: 600px;
+            padding: 40px;
         }
-        /* ... reste du CSS ... */
+        .app-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .app-header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            display: none;
+            z-index: 1000;
+        }
+        .notification.show { display: block; }
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        .user-info {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .user-info h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        .user-info p {
+            margin: 5px 0;
+            color: #666;
+        }
     </style>
 </head>
 <body>
+    <div id="notification" class="notification"></div>
+    
     <div class="app-container">
         <div class="app-header">
             <h1>🎯 MotiveMe</h1>
-            <p>Python Edition - Transforme tes objectifs en habitudes</p>
+            <p>Transforme tes objectifs en habitudes</p>
         </div>
         
-        <div id="app">
-            <h2>Application Python Fonctionnelle</h2>
-            <p>Backend Flask opérationnel sur port 3000</p>
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="screen active">
+            <h2 style="margin-bottom: 20px; text-align: center;">Bienvenue !</h2>
+            <button class="btn btn-primary" onclick="showScreen('signupScreen')">Créer un compte</button>
+            <button class="btn btn-secondary" onclick="showScreen('signinScreen')">Se connecter</button>
+        </div>
+        
+        <!-- Signup Screen -->
+        <div id="signupScreen" class="screen">
+            <h2 style="margin-bottom: 20px;">Inscription</h2>
+            <form id="signupForm" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="signupName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe (min 8 caractères)</label>
+                    <input type="password" id="signupPassword" required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary">S'inscrire</button>
+                <button type="button" class="btn btn-secondary" onclick="showScreen('welcomeScreen')">Retour</button>
+            </form>
+        </div>
+        
+        <!-- Signin Screen -->
+        <div id="signinScreen" class="screen">
+            <h2 style="margin-bottom: 20px;">Connexion</h2>
+            <form id="signinForm" onsubmit="handleSignin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signinEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="signinPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Se connecter</button>
+                <button type="button" class="btn btn-secondary" onclick="showScreen('welcomeScreen')">Retour</button>
+            </form>
+        </div>
+        
+        <!-- Dashboard Screen -->
+        <div id="dashboardScreen" class="screen">
+            <div class="user-info">
+                <h3>Profil utilisateur</h3>
+                <p><strong>Nom:</strong> <span id="userName"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>Points:</strong> <span id="userPoints"></span></p>
+            </div>
+            <button class="btn btn-secondary" onclick="handleSignout()">Se déconnecter</button>
         </div>
     </div>
     
     <script>
-        // Client API simple
-        async function signup(email, password, name) {
-            const res = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({email, password, metadata: {name}})
-            });
-            return res.json();
+        // Configuration
+        const API_URL = '/api';
+        
+        // Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
         }
         
-        async function signin(email, password) {
-            const res = await fetch('/api/auth/signin', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({email, password})
-            });
-            return res.json();
+        // Notifications
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            setTimeout(() => notification.classList.remove('show'), 3000);
         }
         
-        console.log('✅ MotiveMe Python Edition chargée');
+        // Signup
+        async function handleSignup(event) {
+            event.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password, metadata: { name } })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showNotification('Inscription réussie !', 'success');
+                    displayUserInfo(data.user);
+                    showScreen('dashboardScreen');
+                } else {
+                    showNotification(data.error || 'Erreur lors de l\'inscription', 'error');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showNotification('Erreur de connexion au serveur', 'error');
+            }
+        }
+        
+        // Signin
+        async function handleSignin(event) {
+            event.preventDefault();
+            const email = document.getElementById('signinEmail').value;
+            const password = document.getElementById('signinPassword').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/signin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showNotification('Connexion réussie !', 'success');
+                    displayUserInfo(data.user);
+                    showScreen('dashboardScreen');
+                } else {
+                    showNotification(data.error || 'Erreur lors de la connexion', 'error');
+                }
+            } catch (error) {
+                console.error('Signin error:', error);
+                showNotification('Erreur de connexion au serveur', 'error');
+            }
+        }
+        
+        // Signout
+        async function handleSignout() {
+            try {
+                await fetch(`${API_URL}/auth/signout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showNotification('Déconnexion réussie', 'success');
+                showScreen('welcomeScreen');
+            } catch (error) {
+                console.error('Signout error:', error);
+            }
+        }
+        
+        // Display user info
+        function displayUserInfo(user) {
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userPoints').textContent = user.points;
+        }
+        
+        // Check session on load
+        async function checkSession() {
+            try {
+                const response = await fetch(`${API_URL}/auth/session`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.user) {
+                    displayUserInfo(data.user);
+                    showScreen('dashboardScreen');
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+            }
+        }
+        
+        // Initialize
+        checkSession();
+        console.log('✅ MotiveMe Python Edition initialisée');
     </script>
 </body>
 </html>

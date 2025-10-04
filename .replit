@@ -7,7 +7,7 @@ channel = "stable-25_05"
 packages = ["tree"]
 
 [workflows]
-runButton = "Python Backend"
+runButton = "Python App Complete"
 
 [[workflows.workflow]]
 name = "Project"
@@ -201,6 +201,19 @@ outputType = "console"
 
 [[workflows.workflow]]
 name = "Python Backend"
+author = 48287981
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 db_init.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
+
+[[workflows.workflow]]
+name = "Python App Complete"
 author = 48287981
 mode = "sequential"
 

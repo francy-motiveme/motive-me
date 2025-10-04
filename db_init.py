@@ -67,5 +67,50 @@ def init_database():
     conn.close()
     print("✅ Database initialized successfully")
 
+def init_database():
+    """Initialize database tables"""
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        
+        print("🔧 Création des tables...")
+        
+        # Users table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id UUID PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                points INTEGER DEFAULT 0,
+                badges JSONB DEFAULT '[]',
+                preferences JSONB DEFAULT '{}',
+                stats JSONB DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Auth credentials table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS auth_credentials (
+                id SERIAL PRIMARY KEY,
+                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                email_verified BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        print("✅ Database initialized successfully")
+        
+    except Exception as e:
+        print(f"❌ Database initialization error: {str(e)}")
+        raise
+
 if __name__ == '__main__':
-    init_database()
+    init_database()()
