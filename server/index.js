@@ -97,7 +97,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
     const sanitizedName = sanitizeHtml(metadata.name || email.split('@')[0]);
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     // Vérifier email AVANT toute création
     const existingUser = await query(
       'SELECT email FROM users WHERE email = $1',
@@ -158,7 +158,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Signup error:', error);
-    
+
     // Gestion erreur email déjà utilisé (contrainte DB)
     if (error.code === '23505' && error.constraint === 'users_email_key') {
       return res.status(400).json({ 
@@ -166,7 +166,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
         error: 'Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.' 
       });
     }
-    
+
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -253,18 +253,18 @@ app.get('/api/auth/session', async (req, res) => {
     if (!req.session || !req.session.userId) {
       return res.json({ success: true, session: null, user: null });
     }
-    
+
     const userResult = await query(
       'SELECT * FROM users WHERE id = $1',
       [req.session.userId]
     );
-    
+
     if (userResult.rows.length === 0) {
       return res.json({ success: true, session: null, user: null });
     }
-    
+
     const user = userResult.rows[0];
-    
+
     res.json({
       success: true,
       data: {
@@ -284,17 +284,17 @@ app.get('/api/auth/session', async (req, res) => {
 app.get('/api/users/:id', requireAuth, async (req, res) => {
   try {
     const userId = req.params.id;
-    
+
     if (req.session.userId !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const result = await query('SELECT * FROM users WHERE id = $1', [userId]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Get user error:', error);
@@ -358,16 +358,16 @@ app.post('/api/challenges', requireAuth, async (req, res) => {
 app.get('/api/challenges/user/:userId', requireAuth, async (req, res) => {
   try {
     const userId = req.params.userId;
-    
+
     if (req.session.userId !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const result = await query(
       'SELECT * FROM challenges WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
-    
+
     res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('❌ Get challenges error:', error);
@@ -379,24 +379,24 @@ app.put('/api/challenges/:id', requireAuth, async (req, res) => {
   try {
     const challengeId = req.params.id;
     const updates = req.body;
-    
+
     const challengeResult = await query(
       'SELECT user_id FROM challenges WHERE id = $1',
       [challengeId]
     );
-    
+
     if (challengeResult.rows.length === 0) {
       return res.status(404).json({ error: 'Challenge not found' });
     }
-    
+
     if (challengeResult.rows[0].user_id !== req.session.userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const fields = [];
     const values = [];
     let paramCount = 1;
-    
+
     if (updates.title !== undefined) {
       fields.push(`title = $${paramCount++}`);
       values.push(sanitizeHtml(updates.title));
@@ -421,23 +421,23 @@ app.put('/api/challenges/:id', requireAuth, async (req, res) => {
       fields.push(`points_earned = $${paramCount++}`);
       values.push(updates.points_earned);
     }
-    
+
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
-    
+
     fields.push(`updated_at = NOW()`);
     values.push(challengeId);
-    
+
     const updateQuery = `
       UPDATE challenges 
       SET ${fields.join(', ')}
       WHERE id = $${paramCount}
       RETURNING *
     `;
-    
+
     const result = await query(updateQuery, values);
-    
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Update challenge error:', error);
@@ -448,21 +448,21 @@ app.put('/api/challenges/:id', requireAuth, async (req, res) => {
 app.post('/api/notifications', requireAuth, async (req, res) => {
   try {
     const { user_id, type, title, message, metadata } = req.body;
-    
+
     if (req.session.userId !== user_id) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const sanitizedTitle = sanitizeHtml(title);
     const sanitizedMessage = sanitizeHtml(message);
-    
+
     const result = await query(
       `INSERT INTO notifications (user_id, type, title, message, read, metadata)
        VALUES ($1, $2, $3, $4, false, $5)
        RETURNING *`,
       [user_id, type, sanitizedTitle, sanitizedMessage, JSON.stringify(metadata || {})]
     );
-    
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('❌ Create notification error:', error);
@@ -473,16 +473,16 @@ app.post('/api/notifications', requireAuth, async (req, res) => {
 app.get('/api/notifications/user/:userId', requireAuth, async (req, res) => {
   try {
     const userId = req.params.userId;
-    
+
     if (req.session.userId !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
     const result = await query(
       'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
       [userId]
     );
-    
+
     res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('❌ Get notifications error:', error);
@@ -495,7 +495,7 @@ const startServer = async () => {
     console.log('🔧 Initializing database...');
     await initializeDatabase();
     console.log('✅ Database initialized successfully');
-    
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 MotiveMe API server running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Health check: http://localhost:${PORT}/api/health`);

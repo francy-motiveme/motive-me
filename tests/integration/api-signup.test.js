@@ -13,13 +13,14 @@ describe('API Signup - Tests d\'intégration', () => {
             credentials: 'include',
             body: JSON.stringify({
                 email: uniqueEmail,
-                password: 'Password123!',
+                password: 'Test1234', // 4 caractères minimum
                 metadata: { name: 'Integration Test' }
             })
         });
 
-        expect(response.ok).toBe(true);
+        // Status 201 = création réussie
         expect(response.status).toBe(201);
+        expect(response.ok).toBe(true);
 
         const data = await response.json();
         
@@ -30,18 +31,20 @@ describe('API Signup - Tests d\'intégration', () => {
     });
 
     test('POST /auth/signup - rejet email déjà utilisé', async () => {
-        const email = 'duplicate@test.com';
+        const email = `duplicate-${Date.now()}@test.com`;
         
         // Première inscription
-        await fetch(`${API_URL}/auth/signup`, {
+        const first = await fetch(`${API_URL}/auth/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email,
-                password: 'Password123!',
+                password: 'Test1234',
                 metadata: { name: 'First' }
             })
         });
+
+        expect(first.status).toBe(201); // Première doit réussir
 
         // Deuxième inscription (devrait échouer)
         const response = await fetch(`${API_URL}/auth/signup`, {
@@ -49,13 +52,13 @@ describe('API Signup - Tests d\'intégration', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email,
-                password: 'Password123!',
+                password: 'Test1234',
                 metadata: { name: 'Second' }
             })
         });
 
-        expect(response.ok).toBe(false);
         expect(response.status).toBe(400);
+        expect(response.ok).toBe(false);
 
         const data = await response.json();
         expect(data.success).toBe(false);
@@ -68,15 +71,16 @@ describe('API Signup - Tests d\'intégration', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: 'invalid-email',
-                password: 'Password123!',
+                password: 'Test1234',
                 metadata: { name: 'Test' }
             })
         });
 
-        expect(response.ok).toBe(false);
         expect(response.status).toBe(400);
+        expect(response.ok).toBe(false);
 
         const data = await response.json();
+        expect(data.success).toBe(false);
         expect(data.error).toContain('email');
     });
 });

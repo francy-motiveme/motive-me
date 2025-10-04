@@ -973,19 +973,23 @@ class MotiveMeApp {
 }
 
 // ========== INITIALISATION GLOBALE ==========
-// Les fonctions globales sont maintenant définies dans index.html AVANT le chargement des modules
-console.log('✅ [APP] Module app.js chargé - Fonctions globales déjà disponibles');
+console.log('✅ [APP] Module app.js chargé');
 let motiveMeApp;
+let app; // Variable globale pour compatibilité
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         motiveMeApp = new MotiveMeApp();
+        app = motiveMeApp; // Alias global
         window.motiveMeApp = motiveMeApp;
+        window.app = app;
         motiveMeApp.init();
     });
 } else {
     motiveMeApp = new MotiveMeApp();
+    app = motiveMeApp; // Alias global
     window.motiveMeApp = motiveMeApp;
+    window.app = app;
     motiveMeApp.init();
 }
 
