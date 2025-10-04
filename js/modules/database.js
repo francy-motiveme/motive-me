@@ -124,7 +124,7 @@ class Database {
                 data = await response.json();
             } catch (jsonError) {
                 console.error('❌ Erreur parsing JSON:', jsonError);
-                data = { error: 'Invalid JSON response' };
+                return { success: false, error: 'Invalid JSON response' };
             }
 
             if (!response.ok) {
@@ -135,15 +135,14 @@ class Database {
 
                 const errorMsg = data.error || `HTTP ${response.status}`;
                 console.error(`❌ Fetch error [${endpoint}]: ${errorMsg}`);
-                throw new Error(errorMsg);
+                return { success: false, error: errorMsg };
             }
 
-            return { success: true, response, data };
+            return { success: true, data };
         } catch (error) {
             const errorMessage = error.message || 'Network error';
             console.error(`❌ Fetch error [${endpoint}]:`, errorMessage);
 
-            // Si mode dégradé n'est pas encore activé et qu'on a une erreur réseau
             if (!this.fallbackMode && errorMessage.includes('Failed to fetch')) {
                 console.warn('⚠️ Erreur réseau détectée, passage en mode dégradé possible');
             }

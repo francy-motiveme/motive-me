@@ -19,26 +19,8 @@ if (!sessionSecret) {
   console.warn('⚠️  Please set SESSION_SECRET environment variable in production!');
 }
 
-const allowedOrigins = process.env.FRONTEND_URL 
-  ? process.env.FRONTEND_URL.split(',') 
-  : ['http://localhost:5000', 'http://127.0.0.1:5000'];
-
-if (process.env.REPLIT_DEV_DOMAIN) {
-  allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
-  allowedOrigins.push(`http://${process.env.REPLIT_DEV_DOMAIN}`);
-}
-
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.some(allowed => origin && origin.startsWith(allowed))) {
-      callback(null, true);
-    } else {
-      console.warn('⚠️ CORS blocked origin:', origin);
-      callback(null, true);
-    }
-  },
+  origin: true,
   credentials: true
 }));
 
@@ -498,7 +480,7 @@ const startServer = async () => {
       console.log(`🚀 MotiveMe API server running on http://0.0.0.0:${PORT}`);
       console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
       console.log(`🔒 Session secret: ${sessionSecret.substring(0, 10)}...`);
-      console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
+      console.log(`🌐 CORS enabled for all origins`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
