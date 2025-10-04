@@ -182,46 +182,35 @@ class MotiveMeApp {
                 console.log('✅ [SIGNUP] Inscription réussie');
                 showNotification(result.message, 'success');
 
-                // Vérifier si l'utilisateur est maintenant connecté
-                console.log('🔄 [SIGNUP] Vérification état connexion...');
-                console.log('🔄 [SIGNUP] currentUser:', this.currentUser);
+                // L'auto-login est géré par authManager.signUp
+                // qui notifie SIGNED_IN et trigger handleAuthChange
                 
-                // Attendre un peu que handleAuthChange se déclenche
+                // Attendre que handleAuthChange termine
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                // Si toujours pas connecté, recharger le profil manuellement
+                // Vérifier si redirection automatique a fonctionné
                 if (!this.currentUser) {
-                    console.log('⚠️ [SIGNUP] currentUser null, rechargement manuel...');
+                    console.log('⚠️ [SIGNUP] Rechargement manuel du profil...');
                     const session = await authManager.getCurrentSession();
-                    console.log('🔄 [SIGNUP] Session récupérée:', session);
                     
                     if (session && session.user) {
-                        await authManager.loadUserProfile(session.user);
-                        this.currentUser = authManager.getCurrentUser();
-                        console.log('✅ [SIGNUP] Profil chargé:', this.currentUser);
+                        this.currentUser = session.user;
+                        await this.loadDashboard();
+                        showScreen('dashboardScreen');
+                        await this.checkAndCreateTempChallenge();
+                    } else {
+                        // Fallback: rediriger vers login
+                        showNotification('Compte créé ! Connecte-toi maintenant.', 'success');
+                        showScreen('loginScreen');
+                        const loginEmail = document.getElementById('loginEmail');
+                        if (loginEmail) loginEmail.value = email;
                     }
-                }
-                
-                // Redirection vers dashboard
-                if (this.currentUser) {
-                    console.log('🔄 [SIGNUP] Redirection vers dashboard...');
-                    await this.loadDashboard();
-                    showScreen('dashboardScreen');
-                    
-                    // Vérifier challenge temporaire
-                    await this.checkAndCreateTempChallenge();
-                } else {
-                    console.error('❌ [SIGNUP] Impossible de récupérer le profil utilisateur');
-                    showNotification('Connexion réussie mais erreur de chargement du profil', 'warning');
-                    showScreen('loginScreen');
                 }
             } else {
                 console.error('❌ [SIGNUP] Échec inscription:', result.error);
                 
-                // Affichage erreur selon le type
                 if (result.emailExists) {
                     showNotification(result.error + ' Tu peux te connecter à la place.', 'warning');
-                    // Pré-remplir l'email sur la page de connexion
                     showScreen('loginScreen');
                     const loginEmail = document.getElementById('loginEmail');
                     if (loginEmail) loginEmail.value = email;
@@ -1034,15 +1023,35 @@ if (document.readyState === 'loading') {
 }
 
 // Fonction de déconnexion
-async function signOut() {
+window.signOut = async function() {
     const result = await authManager.signOut();
     if (result.success) {
         console.log('✅ Déconnexion réussie');
-        uiManager.showScreen('loginScreen');
+        if (window.uiManager) {
+            window.uiManager.showScreen('loginScreen');
+        }
     }
-}
+};
 
-// Fonctions globales manquantes
+// Exposer toutes les fonctions nécessaires IMMÉDIATEMENT
+window.login = async function() {
+    if (window.motiveMeApp) {
+        return await window.motiveMeApp.login();
+    }
+};
+
+window.signup = async function() {
+    if (window.motiveMeApp) {
+        return await window.motiveMeApp.signup();
+    }
+};
+
+window.logout = async function() {
+    if (window.motiveMeApp) {
+        return await window.motiveMeApp.logout();
+    }
+};
+
 window.showScreen = function(screenName) {
     if (window.uiManager) {
         window.uiManager.showScreen(screenName);
@@ -1057,6 +1066,48 @@ window.loadDashboard = async function() {
     } else {
         console.error('❌ challengeManager.loadDashboard non disponible');
         return { success: false, error: 'Manager non initialisé' };
+    }
+};
+
+window.createChallenge = async function() {
+    if (window.motiveMeApp) {
+        return await window.motiveMeApp.createChallenge();
+    }
+};
+
+window.viewChallenge = function(id) {
+    if (window.motiveMeApp) {
+        return window.motiveMeApp.viewChallenge(id);
+    }
+};
+
+window.checkIn = async function() {
+    if (window.motiveMeApp) {
+        return await window.motiveMeApp.checkIn();
+    }
+};
+
+window.switchTab = function(tabName) {
+    if (window.motiveMeApp) {
+        return window.motiveMeApp.switchTab(tabName);
+    }
+};
+
+window.toggleDay = function(element) {
+    if (window.motiveMeApp) {
+        return window.motiveMeApp.toggleDay(element);
+    }
+};
+
+window.selectGage = function(element, gage) {
+    if (window.motiveMeApp) {
+        return window.motiveMeApp.selectGage(element, gage);
+    }
+};
+
+window.toggleDaysSelector = function() {
+    if (window.motiveMeApp) {
+        return window.motiveMeApp.toggleDaysSelector();
     }
 };
 

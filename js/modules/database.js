@@ -1,7 +1,8 @@
 // Base de données - Interface Express API Backend
-// Utiliser le proxy Vite pour les requêtes API
+// Utiliser le proxy Vite configuré dans vite.config.js
 const API_BASE_URL = '/api';
 console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('🌐 Window location:', window.location.origin);
 
 class EventEmitter {
     constructor() {
@@ -45,13 +46,8 @@ class Database {
         }
 
         try {
-            // Assurez-vous que l'URL de l'API est correctement configurée pour le frontend
-            // Si VITE_API_URL n'est pas défini, utilisez l'origine actuelle + le port 3000
-            const apiOrigin = import.meta.env.VITE_API_URL 
-                ? import.meta.env.VITE_API_URL.replace('/api', '') 
-                : `${window.location.origin.replace(/:\d+$/, '')}:3000`;
-            
-            const healthUrl = `${apiOrigin}/api/health`;
+            // Utiliser le proxy Vite pour health check
+            const healthUrl = `${API_BASE_URL}/health`;
             console.log('🚀 Tentative de connexion à:', healthUrl);
 
             const response = await Promise.race([
@@ -113,8 +109,8 @@ class Database {
     }
 
     async _fetch(endpoint, options = {}) {
-        // Utiliser l'URL de l'API configurée dans le constructeur
-        const url = endpoint.startsWith('http') ? endpoint : `${this.apiUrl}${endpoint}`;
+        // Utiliser l'URL de l'API avec le proxy Vite
+        const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
         const defaultOptions = {
             credentials: 'include',
