@@ -172,7 +172,7 @@ class MotiveMeApp {
             console.log('📊 Résultat inscription:', result);
 
             if (result.success) {
-                showNotification(result.message);
+                showNotification(result.message, 'success');
 
                 // L'utilisateur est maintenant connecté (autoLogin: true)
                 // handleAuthChange va se déclencher et gérer le reste
@@ -185,7 +185,13 @@ class MotiveMeApp {
                 }
             } else {
                 console.error('❌ Échec inscription:', result.error);
-                showNotification(result.error, 'error');
+                
+                // Affichage erreur selon le type
+                if (result.emailExists) {
+                    showNotification(result.error + ' Tu peux te connecter à la place.', 'warning');
+                } else {
+                    showNotification(result.error, 'error');
+                }
             }
         } catch (error) {
             console.error('❌ Erreur signup:', error);
@@ -1018,4 +1024,5 @@ window.authManager = authManager;
 window.challengeManager = challengeManager;
 window.uiManager = uiManager;
 
+// Export correct
 export default motiveMeApp;

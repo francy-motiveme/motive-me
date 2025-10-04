@@ -103,12 +103,20 @@ export class AuthManager {
             });
 
             if (!signUpResult.success) {
-                return { success: false, error: signUpResult.error };
+                // Gestion spécifique erreur email déjà utilisé
+                if (signUpResult.error && signUpResult.error.includes('déjà utilisé')) {
+                    return {
+                        success: false,
+                        error: signUpResult.error,
+                        emailExists: true
+                    };
+                }
+                return { success: false, error: signUpResult.error || 'Erreur lors de l\'inscription' };
             }
 
             // CORRECTION CRITIQUE: Charger le profil ET notifier SIGNED_IN
             await this.loadUserProfile(signUpResult.data.user);
-            
+
             // S'assurer que SIGNED_IN est bien notifié
             if (this.currentUser) {
                 console.log('✅ [AUTH] Notification SIGNED_IN après inscription:', this.currentUser.email);
@@ -124,7 +132,17 @@ export class AuthManager {
 
         } catch (error) {
             console.error('❌ Erreur inscription:', error);
-            return { success: false, error: 'Erreur lors de l\'inscription. Réessaie plus tard.' };
+
+            // Message d'erreur plus informatif
+            let errorMessage = 'Erreur lors de l\'inscription.';
+
+            if (error.message && error.message.includes('Failed to fetch')) {
+                errorMessage = 'Erreur de connexion au serveur. Vérifie ta connexion internet.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            return { success: false, error: errorMessage };
         }
     }
 

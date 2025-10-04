@@ -92,13 +92,17 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
     const sanitizedName = sanitizeHtml(metadata.name || email.split('@')[0]);
     
-    const existingAuth = await query(
-      'SELECT * FROM auth_credentials WHERE email = $1',
+    // Vérifier email dans la table users (PAS auth_credentials)
+    const existingUser = await query(
+      'SELECT email FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
     );
 
-    if (existingAuth.rows.length > 0) {
-      return res.status(400).json({ error: 'User already exists with this email' });
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.' 
+      });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -147,6 +151,15 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Signup error:', error);
+    
+    // Gestion erreur email déjà utilisé
+    if (error.code === '23505' && error.constraint === 'users_email_key') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.' 
+      });
+    }
+    
     res.status(500).json({ success: false, error: error.message });
   }
 });
