@@ -114,18 +114,27 @@ export class AuthManager {
                 return { success: false, error: signUpResult.error || 'Erreur lors de l\'inscription' };
             }
 
-            // CORRECTION CRITIQUE: Charger le profil ET notifier SIGNED_IN
-            await this.loadUserProfile(signUpResult.data.user);
+            // Charger immédiatement le profil utilisateur
+            const userData = signUpResult.data.user;
+            this.currentUser = {
+                id: userData.id,
+                email: userData.email,
+                name: userData.name,
+                points: userData.points || 0,
+                badges: userData.badges || [],
+                preferences: userData.preferences || {},
+                stats: userData.stats || {},
+                isAuthenticated: true,
+                lastLogin: new Date().toISOString()
+            };
 
-            // S'assurer que SIGNED_IN est bien notifié
-            if (this.currentUser) {
-                console.log('✅ [AUTH] Notification SIGNED_IN après inscription:', this.currentUser.email);
-                this.notifyAuthListeners('SIGNED_IN', this.currentUser);
-            }
+            // Notifier SIGNED_IN immédiatement
+            console.log('✅ [AUTH] Auto-login après inscription:', this.currentUser.email);
+            this.notifyAuthListeners('SIGNED_IN', this.currentUser);
 
             return {
                 success: true,
-                message: signUpResult.message || `Bienvenue ${this.currentUser?.name || 'anonyme'} ! 👋`,
+                message: signUpResult.message || `Bienvenue ${this.currentUser.name} ! 👋`,
                 user: this.currentUser,
                 autoLogin: true
             };

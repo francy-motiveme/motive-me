@@ -174,15 +174,12 @@ class MotiveMeApp {
             if (result.success) {
                 showNotification(result.message, 'success');
 
-                // L'utilisateur est maintenant connecté (autoLogin: true)
-                // handleAuthChange va se déclencher et gérer le reste
-                console.log('✅ Inscription réussie, utilisateur connecté');
+                // L'utilisateur est maintenant connecté automatiquement
+                // handleAuthChange() va gérer la redirection vers dashboard
+                console.log('✅ Inscription réussie, auto-login activé');
                 
-                // Vérifier challenge temporaire
-                const tempChallenge = localStorage.getItem('motiveme_temp_challenge');
-                if (tempChallenge) {
-                    console.log('📦 Challenge temporaire trouvé, sera créé après connexion');
-                }
+                // NE PAS rediriger manuellement - laisser handleAuthChange() le faire
+                // Vérifier challenge temporaire sera fait dans handleAuthChange()
             } else {
                 console.error('❌ Échec inscription:', result.error);
                 

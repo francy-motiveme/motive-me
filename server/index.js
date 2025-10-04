@@ -79,23 +79,29 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
   try {
     const { email, password, metadata = {} } = req.body;
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ error: 'Format email invalide (ex: nom@domaine.com)' });
-    }
-
-    if (!isValidPassword(password)) {
+    // Validation email STRICTE
+    if (!email || !isValidEmail(email)) {
       return res.status(400).json({ 
         success: false,
-        error: 'Le mot de passe doit contenir au moins 4 caractères (aucune exigence de complexité)'
+        error: 'Format email invalide (ex: nom@domaine.com)' 
+      });
+    }
+
+    // Validation mot de passe STRICTE
+    if (!password || !isValidPassword(password)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Le mot de passe doit contenir au moins 4 caractères'
       });
     }
 
     const sanitizedName = sanitizeHtml(metadata.name || email.split('@')[0]);
+    const normalizedEmail = email.toLowerCase().trim();
     
-    // Vérifier email dans la table users (PAS auth_credentials)
+    // Vérifier email AVANT toute création
     const existingUser = await query(
       'SELECT email FROM users WHERE email = $1',
-      [email.toLowerCase().trim()]
+      [normalizedEmail]
     );
 
     if (existingUser.rows.length > 0) {
@@ -111,7 +117,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
       `INSERT INTO users (email, name, points, badges, preferences, stats)
        VALUES ($1, $2, 0, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb)
        RETURNING *`,
-      [email.toLowerCase().trim(), sanitizedName]
+      [normalizedEmail, sanitizedName]
     );
 
     const user = userResult.rows[0];
@@ -119,12 +125,13 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     await query(
       `INSERT INTO auth_credentials (user_id, email, password_hash, email_verified) 
        VALUES ($1, $2, $3, false)`,
-      [user.id, email.toLowerCase().trim(), passwordHash]
+      [user.id, normalizedEmail, passwordHash]
     );
 
     req.session.userId = user.id;
     req.session.userEmail = user.email;
 
+    // IMPORTANT : Status 201 pour création réussie
     res.status(201).json({
       success: true,
       data: {
@@ -152,7 +159,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
   } catch (error) {
     console.error('❌ Signup error:', error);
     
-    // Gestion erreur email déjà utilisé
+    // Gestion erreur email déjà utilisé (contrainte DB)
     if (error.code === '23505' && error.constraint === 'users_email_key') {
       return res.status(400).json({ 
         success: false, 
